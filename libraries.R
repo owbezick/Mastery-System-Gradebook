@@ -2,7 +2,6 @@
 
 # Shiny
 library(shinydashboard)
-library(shinydashboardPlus)
 library(shinyWidgets)
 
 # Data
