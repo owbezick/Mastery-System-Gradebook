@@ -18,11 +18,11 @@ ui <- dashboardPage(
     tabItems(
       tabItem(
         tabName = "studentProfile"
-      )
+        )
       , tabItem(
         tabName = "viewGrades"
-        , tabBox(
-          tabPanel(title = "Exam Grades")
+        , tabBox(width = 12
+          , tabPanel(title = "Exam Grades")
           , tabPanel(title = "Homework Grades")
         )
       )
@@ -36,7 +36,7 @@ ui <- dashboardPage(
 
 # Define server logic 
 server <- function(input, output) {
-
+  
 }
 
 # Run the application 
