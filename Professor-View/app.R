@@ -478,13 +478,13 @@ server <- function(input, output) {
         student_id <- df$student_id
         
         # Write to Database
-        sql_query <- paste0("update Shiny.dbo.homeworkGrades set grade = '", newGrade, "' where (homework_id = ", hw_ID, " and student_id = ", student_id, ")")
+        sql_query <- paste0("update Shiny.dbo.homework_grade set grade = '", newGrade, "' where (homework_id = ", hw_ID, " and student_id = ", student_id, ")")
         dbExecute(con, sql_query)
         
         # Background App Refresh
-        sql_query <- 'Select * from Shiny.dbo.homeworkGrades'
+        sql_query <- 'Select * from Shiny.dbo.homework_grade'
         df_homeworkGrades <- dbGetQuery(con, sql_query)
-        reactive$df_homeworkGrades <- df_homeworkGrades
+        reactive$homework_grade <- df_homeworkGrades
         
         showNotification("Changes Saved to Remote Database.", type = c("message"), duration = 3)
         removeModal()
