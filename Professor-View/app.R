@@ -73,9 +73,9 @@ ui <- dashboardPage(
             )
             , tabItem(
                 tabName = "editReviewGrades"
-                , actionBttn(inputId = "addReview", label = "Add Review", style = "fill", color = "primary", block = T)
+                , actionBttn(inputId = "addReview", label = "Add Exam", style = "fill", color = "primary", block = T)
                 , fluidRow(
-                    box(width = 12, status = "primary", title = "Edit Review Grades"
+                    box(width = 12, status = "primary", title = "Edit Exam Grades"
                         , column(width = 12
                                  , DTOutput("edit_exam_dt")
                         )
@@ -341,7 +341,7 @@ server <- function(input, output) {
     })
     
     
-    #  Add Review Button press --- implements button to make changes
+    # Add Exam
     observeEvent(input$addReview, {
         showModal(
             modalDialog(title = "Add an Exam",  easyClose = T
@@ -400,7 +400,16 @@ server <- function(input, output) {
         noNew <- gsub('\n'," ",noDouble)
         dbSendQuery(con, noNew)
         
+        # Background App Refresh
+        sql_query <- 'Select * from Shiny.dbo.exam_def'
+        df_examdef <- dbGetQuery(con, sql_query)
+        reactive$exam_def <- df_examdef
+        
         showNotification(paste0("Exam added as id: ", as.character(input$add_exam_id)))
+        
+        # Add exam to grades as NA
+        
+        
     })
     
     # Edit Homework Server ----
