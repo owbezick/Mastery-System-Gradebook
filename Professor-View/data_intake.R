@@ -73,7 +73,9 @@ con <- db_connect()
 # Pull SQL Tables ----
 # Students
 sql_query <- 'Select * from Shiny.dbo.student_def' 
-student_def <- dbGetQuery(con, sql_query)
+student_def <- dbGetQuery(con, sql_query) 
+student_def <- student_def %>%
+  mutate(firstLast = paste(first, last)) 
 
 # Exams
 sql_query <- 'Select * from Shiny.dbo.exam_def' 
@@ -94,13 +96,13 @@ homework_grade <- dbGetQuery(con, sql_query)
 reactive <- reactiveValues(exam_def = exam_def, exam_grade = exam_grade,homework_def = homework_def, homework_grade = homework_grade)
 
 exam_grades <- reactive({
-  test <- merge(exam_def, exam_grade) %>% merge(student_def) %>%
+  merge(reactive$exam_def, reactive$exam_grade) %>% merge(student_def) %>%
     mutate(firstLast = paste(first, last)) %>%
     select(firstLast, exam_id, topic_id, grade)
 })
 
 homework_grades <- reactive({
-  test <- merge(homework_def, homework_grade) %>% merge(student_def) %>%
+  merge(homework_def, homework_grade) %>% merge(student_def) %>%
     mutate(firstLast = paste(first, last)) %>%
     select(firstLast, last, homework_id, grade)
 })

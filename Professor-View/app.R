@@ -77,7 +77,7 @@ ui <- dashboardPage(
                 , fluidRow(
                     box(width = 12, status = "primary", title = "Edit Review Grades"
                         , column(width = 12
-                                 , DTOutput("totalEditReviewGrades")
+                                 , DTOutput("edit_exam_dt")
                         )
                     )
                 )
@@ -156,7 +156,7 @@ server <- function(input, output) {
             filter(grade != "NA") %>%
             count(grade) %>%
             ungroup()
-    
+        
         apprentice <- df %>%
             filter(grade == "A") %>%
             summarise(total = sum(n)) %>%
@@ -262,37 +262,29 @@ server <- function(input, output) {
             e_legend(show = F)
     })
     
-    # Edit Review Server ----
-    # Review Grades Data -- pulls all review information from the data base
-    reviewGradesData <- reactive({
-        df <- getReviewGrades()
-        df <- df %>%
-            select(First = first_name, Last = last_name,`Review Id` = review_id,Topic = topic_id, Grade = grade)
-    })
-    
-    # Edit Review Grades-- implements database and display changes to let the 
-    # professor update review assignments
-    output$totalEditReviewGrades <- renderDT({
-        df <- reviewGradesData()
+    # Edit Exam Server ----
+    output$edit_exam_dt <- renderDT({
+        df <- exam_grades() %>%
+            select(Name = firstLast, `Exam Id` = exam_id, Topic = topic_id, Grade = grade)
         datatable(df, rownames = FALSE
                   , selection = list(mode = 'single', target = 'row')
                   , filter = 'top', caption = "Click a Row to Edit")
     })
     
     # Creates interactive box to input changes
-    observeEvent(input$totalEditReviewGrades_rows_selected,{
-        rowNumber <- input$totalEditReviewGrades_rows_selected
-        df <- reviewGradesData()
+    observeEvent(input$edit_exam_dt_rows_selected,{
+        rowNumber <- input$edit_exam_dt_rows_selected
+        df <- exam_grades()
         rowData <- df[rowNumber, ]
         showModal(
             modalDialog(title = "Edit Grade", easyClose = T
                         ,box(width = 12, status = "primary"
                              , HTML("<b> Name: </b>")
-                             , renderText(paste(rowData$First, rowData$Last))
+                             , renderText(paste(rowData$firstLast))
                              , HTML("<b> Topic ID: </b>")
-                             , renderText(rowData$Topic)
+                             , renderText(rowData$topic_id)
                              , pickerInput("grade", "Grade:", choices = c("M", "J", "A", "NA")
-                                           , selected = as.character(rowData$Grade))
+                                           , selected = as.character(rowData$grade))
                         )
                         , footer = fluidRow(
                             column(width = 6
@@ -322,27 +314,26 @@ server <- function(input, output) {
     
     #When the "Save Grade" button is pressed
     observeEvent(input$gradeSave,{
-        rowNumber <- input$totalEditReviewGrades_rows_selected
-        df <- reviewGradesData()
+        rowNumber <- input$edit_exam_dt_rows_selected
+        df <- exam_grades()
         rowData <- df[rowNumber, ]
-        topic_id <- rowData$Topic
+        topic_id <- rowData$topic_id
         newGrade <- as.character(input$grade)
-        review_id <- rowData[1, 3]
+        exam_id <- rowData[1, 3]
         
-        df <- df_students %>%
-            filter(first_name == rowData$First) %>%
-            filter(last_name == rowData$Last) 
+        df <- student_def %>%
+            filter(firstLast == rowData$firstLast)
         
         student_id <- df$student_id
         
         # Write to Database
-        sql_query <- paste0("update Shiny.dbo.reviewGrades set grade = '", newGrade, "' where (topic_id = ", topic_id, " and student_id = ", student_id, " and review_id = ", review_id, ")")
+        sql_query <- paste0("update Shiny.dbo.exam_grade set grade = '", newGrade, "' where (topic_id = ", topic_id, " and student_id = ", student_id, " and exam_id = ", exam_id, ")")
         dbExecute(con, sql_query)
         
         # Background App Refresh
-        sql_query <- 'Select * from Shiny.dbo.reviewGrades'
-        df_reviewGrades <- dbGetQuery(con, sql_query)
-        reactive$df_reviewGrades <- df_reviewGrades
+        sql_query <- 'Select * from Shiny.dbo.exam_grade'
+        df_examGrades <- dbGetQuery(con, sql_query)
+        reactive$exam_grade <- df_examGrades
         
         showNotification("Changes Saved to Remote Database.", type = c("message"), duration = 3)
         
@@ -353,24 +344,22 @@ server <- function(input, output) {
     #  Add Review Button press --- implements button to make changes
     observeEvent(input$addReview, {
         showModal(
-            modalDialog(title = "Add a Review",  easyClose = T
-                        , box(width = 12, status = "primary", title = "Review Information"
+            modalDialog(title = "Add an Exam",  easyClose = T
+                        , box(width = 12, status = "primary", title = "Exam Information"
                               , fluidRow(
                                   column(width = 6
-                                         , numericInput(inputId = "addReviewID", label = "Review ID", value = 1 + max(df_reviews$review_id))
-                                         , dateInput(inputId = "addReviewStartDate", label = "Date Assigned", value = 1 + max(df_reviews$date_assigned))
+                                         , numericInput(inputId = "add_exam_id", label = "Review ID", value = 1 + max(exam_def$exam_id))
+                                         , numericInput(inputId = "add_exam_first", label = "Fist Topic", value = 1 + max(exam_def$first_topic))
                                   )
                                   , column(width = 6
-                                           , textInput(inputId = "addReviewTitle", label = "Review Title", value = "Title")
-                                           , dateInput(inputId = "addReviewEndDate", label = "Date Due", value = 1 + max(df_reviews$date_due))
+                                           , dateInput(inputId = "add_exam_date", label = "Date Assigned", value = 1 + max(exam_def$date))
+                                           , numericInput(inputId = "add_exam_last", label = "Last Topic", value = 1 + max(exam_def$last_topic))
                                   )
-                                  , column(width = 12
-                                           , textAreaInput(inputId = "addReviewDesc", label = " Review Description", value = "Description"))
                               )
                         )
                         , footer = fluidRow(
                             column(width = 6
-                                   , actionBttn("saveReview"
+                                   , actionBttn("saveExam"
                                                 , "Save"
                                                 , icon = icon("save")
                                                 , style = "material-flat"
@@ -379,7 +368,7 @@ server <- function(input, output) {
                                    )
                             )
                             , column(width = 6
-                                     , actionBttn("addReviewDismiss"
+                                     , actionBttn("dissmissExam"
                                                   , "Dismiss"
                                                   , icon = icon("close")
                                                   , style = "material-flat"
@@ -391,28 +380,27 @@ server <- function(input, output) {
         )
     })
     # Dismiss
-    observeEvent(input$addReviewDismiss,{
+    observeEvent(input$dissmissExam,{
         removeModal()
     })
     
     # Saves the new assignment
-    observeEvent(input$saveReview, {
+    observeEvent(input$saveExam, {
         con <- db_connect()
-        row <- data_frame(Review_id = c(as.numeric(input$addReviewID))
-                          , date_assigned = c(as.character(input$addReviewStartDate))
-                          , date_due = c(as.character(input$addReviewEndDate))
-                          , title = c(as.character(input$addReviewTitle))
-                          , description = c(as.character(input$addReviewDesc))
-        )
+        row <- data_frame(exam_id = c(as.numeric(input$add_exam_id))
+                          , first_topic = c(as.character(input$add_exam_first))
+                          , last_topic = c(as.character(input$add_exam_last))
+                          , date = c(as.character(input$add_exam_date)))
         
-        query <- sqlAppendTable(con, "shiny.dbo.reviews", quotes(row), row.names = FALSE)
+        
+        query <- sqlAppendTable(con, "shiny.dbo.exam_def", quotes(row), row.names = FALSE)
         
         query_character <- as.character(query)
         noDouble <- gsub('"',"",query)
         noNew <- gsub('\n'," ",noDouble)
         dbSendQuery(con, noNew)
         
-        showNotification(paste0("Review Added as: ", as.character(input$addReviewID)))
+        showNotification(paste0("Exam added as id: ", as.character(input$add_exam_id)))
     })
     
     # Edit Homework Server ----
@@ -476,13 +464,13 @@ server <- function(input, output) {
     observeEvent(input$hwgradeSave,{
         rowNumber <- input$editHomeworkGrades_rows_selected
         df <- homeworkGradesData()
+        browser()
         rowData <- df[rowNumber, ]
         newGrade <- as.character(input$hwGrade)
         hw_ID <- rowData[1, 3]
         
-        df <- df_students %>%
-            filter(first_name == rowData$First) %>%
-            filter(last_name == rowData$Last) 
+        df <- student_def %>%
+            filter(firstLast == rowData$firstLast)
         
         student_id <- df$student_id
         
