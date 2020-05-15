@@ -14,6 +14,7 @@ library(readxl)
 
 # Viz
 library(echarts4r)
+library(timevis)
 
 # SQL Drivers
 library(odbc)
