@@ -565,9 +565,8 @@ server <- function(input, output) {
         )
         
         for(i in 1:nrow(new_grade_df)){
-            test <- quotes(new_grade_df[i,])
-            
-            query <- sqlAppendTable(con, "Shiny.dbo.homework_grade", test, row.names = FALSE)
+            row <- quotes(new_grade_df[i,])
+            query <- sqlAppendTable(con, "Shiny.dbo.homework_grade", row, row.names = FALSE)
             query_character <- as.character(query)
             noDouble <- gsub('"',"",query)
             noNew <- gsub('\n'," ",noDouble)
