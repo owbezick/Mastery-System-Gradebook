@@ -63,7 +63,7 @@ quotes <- function(df) {
 
 # Create SQL Tables ----
 con <- db_connect()
-
+# 
 # tbl_create(con, student_def, "student_def")
 # tbl_create(con, exam_def, "exam_def")
 # tbl_create(con, exam_grade, "exam_grade")

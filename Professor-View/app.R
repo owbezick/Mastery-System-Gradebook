@@ -403,6 +403,8 @@ server <- function(input, output) {
         sql_query <- 'Select * from Shiny.dbo.exam_def'
         df_examdef <- dbGetQuery(con, sql_query)
         reactive$exam_def <- df_examdef
+        
+        
         first_topic <- as.numeric(input$add_exam_first)
         last_topic <- as.numeric(input$add_exam_last)
         times <- last_topic - first_topic + 1
@@ -440,8 +442,11 @@ server <- function(input, output) {
         df_homework_grade <- dbGetQuery(con, sql_query)
         reactive$homework_grade <- df_homework_grade
         
-        showNotification(paste0("Exam added as id: ", as.character(input$add_exam_id), "with grade NA"))
-        
+        showNotification(paste0("Exam added as id: ", as.character(input$add_exam_id), " with grade NA"))
+        # Background App Refresh
+        sql_query <- 'Select * from Shiny.dbo.exam_grade'
+        df_examgrade <- dbGetQuery(con, sql_query)
+        reactive$exam_grade <- df_examgrade
         
         removeModal()
         
