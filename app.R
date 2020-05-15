@@ -1,4 +1,4 @@
-# MAstery Gradebook application
+# Mastery Gradebook application - Student View
 # Author: Owen Bezick
 
 

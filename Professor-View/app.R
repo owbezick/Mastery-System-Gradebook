@@ -1,0 +1,571 @@
+# Mastery Gradebook application - Professor View
+# Author: Owen Bezick
+
+# Source Libraries
+source("libraries.R", local = TRUE)
+source("data_intake.R", local = TRUE)
+source("utils.R", local = TRUE)
+
+# Define UI
+ui <- dashboardPage(
+    dashboardHeader(title = "Professor View" 
+    )
+    # Sidebar ----
+    , dashboardSidebar( 
+        sidebarMenu(
+            menuItem(tabName = "home", text = "Home", icon = icon("home"))
+            , menuItem(tabName ="viewGrades", text = "View Grades", icon = icon("chalkboard")
+                       , menuSubItem(tabName = "examGrades", text = "View Review Grades")
+                       , menuSubItem(tabName = "homeworkGrades", text = "View Homework Grades")
+            )
+            , menuItem(tabName ="editGrades", text = "Edit Grades", icon = icon("chalkboard-teacher")
+                       , menuSubItem(tabName = "editReviewGrades", text = "Edit Review Grades")
+                       , menuSubItem(tabName = "editHomeworkGrades", text = "Edit Homework Grades")
+            )
+        )
+    )
+    , dashboardBody(
+        tabItems(
+            tabItem(
+                tabName = "home"
+                , HTML("<center><h1> Mastery Gradebook Dashboard </h1></center>")
+            )
+            , tabItem(
+                tabName = "examGrades"
+                ,fluidRow(
+                    box(width = 12, title = "Filter:", status = "primary" 
+                        ,column(width = 6
+                                ,uiOutput("examStudentPicker")
+                        )
+                        , column(width = 6
+                                 ,uiOutput("examPicker")
+                        )
+                    )
+                )
+                , fluidRow(
+                    box(width = 6, status = "primary", title = "All Topic Grades"
+                        , DTOutput("totalExamGrades")
+                    )
+                    , box(width = 6, stauts = "primary", title = "Top Grades", status = "primary"
+                          , echarts4rOutput("gradeBar"))
+                )
+            )
+            , tabItem(
+                tabName = "homeworkGrades"
+                , fluidRow(
+                    box(width = 12, title = "Filter:", status = "primary" 
+                        ,column(width = 6
+                                , uiOutput("hwStudentPicker")
+                        )
+                        , column(width = 6
+                                 ,uiOutput("hwPicker")
+                        )
+                    )
+                )
+                , fluidRow(
+                    box(width = 6, status = "primary",  title = "Homework Grades"
+                        , DTOutput("homeworkGradeTable")
+                    )
+                    , box(width = 6, status = "primary", title = "Homework Averages"
+                          , echarts4rOutput("avgHomeworkGraph")
+                    )
+                )
+            )
+            , tabItem(
+                tabName = "editReviewGrades"
+                , actionBttn(inputId = "addReview", label = "Add Review", style = "fill", color = "primary", block = T)
+                , fluidRow(
+                    box(width = 12, status = "primary", title = "Edit Review Grades"
+                        , column(width = 12
+                                 , DTOutput("totalEditReviewGrades")
+                        )
+                    )
+                )
+            )
+            , tabItem(
+                tabName = "editHomeworkGrades"
+                , actionBttn(inputId = "addHW", label = "Add Homework Assignment", style = "fill", color = "primary", block = T)
+                , fluidRow(
+                    box(width = 12, status = "primary", title = "Edit Homework Grades"
+                        , DTOutput("editHomeworkGrades")
+                    )
+                )
+            )
+            
+        )
+    )
+)
+
+
+# Define server logic 
+server <- function(input, output) {
+    
+    # View Review Server ---- 
+    # List of students by ID
+    ls_studentsR <- reactive({
+        df <- exam_grades()
+        df %>% distinct(firstLast) %>% pull()
+    })
+    
+    
+    # List of exams by id
+    ls_examsR <- reactive({
+        df <- exam_grades()
+        df %>% distinct(exam_id) %>% 
+            pull()
+    })
+    
+    # Student Picker
+    output$examStudentPicker <- renderUI({
+        pickerInput("examStudentPicker"
+                    ,"Student"
+                    , choices = ls_studentsR()
+                    , selected = ls_studentsR()
+                    , multiple = TRUE)
+    })
+    
+    # Exam Picker
+    output$examPicker <- renderUI({
+        pickerInput("examPicker"
+                    ,"Exam by ID"
+                    , choices = ls_examsR()
+                    , selected = ls_examsR()
+                    , multiple = TRUE)
+    })
+    
+    filtered_exam_data <- reactive({
+        req(input$examStudentPicker, input$examPicker)
+        df <- exam_grades()
+        df <- df %>%
+            filter(exam_id %in% input$examPicker, firstLast %in% input$examStudentPicker)
+    })
+    # DT Exam Grade Output
+    output$totalExamGrades <- renderDT({
+        df <- filtered_exam_data() %>%
+            select( Name = firstLast, `Exam ID` = exam_id, Topic = topic_id, Grade = grade)
+        datatable(df, rownames = FALSE)
+    })
+    
+    # Total Grades Chart-- visualizes review data from the class
+    output$gradeBar <- renderEcharts4r({
+        df <- filtered_exam_data() 
+        df <- df %>%
+            group_by(firstLast, topic_id) %>%
+            summarise(grade = grade_max(grade)) %>%
+            select(grade) %>%
+            filter(grade != "NA") %>%
+            count(grade) %>%
+            ungroup()
+    
+        apprentice <- df %>%
+            filter(grade == "A") %>%
+            summarise(total = sum(n)) %>%
+            pull()
+        journey <- df %>%
+            filter(grade == "J") %>%
+            summarise(total = sum(n)) %>%
+            pull()
+        master <- df %>%
+            filter(grade == "M") %>%
+            summarise(total = sum(n)) %>%
+            pull()
+        
+        graph_df <- tibble(A = c(0 + as.numeric(apprentice[1]))
+                           , J = c(0 + as.numeric(journey[1]))
+                           , M = c(0 + as.numeric(master[1]))
+                           , chart = c(""))
+        graph_df %>%
+            e_chart(chart) %>%
+            e_bar("A", name = "Apprentice") %>%
+            e_bar("J", name = "Journeyman")  %>%
+            e_bar("M", name = "Master") %>%
+            e_theme("westeros") %>%
+            e_tooltip() %>%
+            e_legend(bottom = 0)
+    })
+    
+    
+    # View Homeworks Server -----
+    # List of students by firstLast
+    ls_studentsHW <- reactive({
+        df <- homework_grades()
+        df %>% distinct(firstLast) %>% pull()
+    })
+    
+    #List from homework
+    ls_homeworksHW <- reactive({
+        df <- homework_grades()
+        df %>% distinct(homework_id) %>% pull()
+    })
+    
+    # Student Picker
+    output$hwStudentPicker <- renderUI({
+        pickerInput("hwStudentPicker"
+                    ,"Student"
+                    , choices = ls_studentsHW()
+                    , selected = ls_studentsHW()
+                    , multiple = TRUE)
+    })
+    
+    # Homework Picker
+    output$hwPicker <- renderUI({
+        pickerInput("hwPicker"
+                    ,"Homework by ID"
+                    , choices = ls_homeworksHW()
+                    , selected = ls_homeworksHW()
+                    , multiple = TRUE)
+    })
+    
+    # Table-- builds table of students and homeworks to return to UI
+    output$homeworkGradeTable <- renderDT({
+        req(input$hwStudentPicker, input$hwPicker)
+        df <- homework_grades()
+        df  <- df %>% 
+            filter(firstLast %in% input$hwStudentPicker) %>%
+            filter(homework_id %in% input$hwPicker) %>%
+            select(Name = firstLast, `Homework ID` = homework_id, Grade= grade)
+        
+        datatable(df, rownames = FALSE)
+    })
+    
+    # Homework Average-- calculates homework averages for every student, pulling 
+    # from the data base
+    hwAvg <- reactive({
+        req(input$hwStudentPicker, input$hwPicker)
+        df <- homework_grades()
+        df  <- df %>% 
+            filter(firstLast %in% input$hwStudentPicker) %>%
+            filter(homework_id %in% input$hwPicker) %>%
+            group_by(firstLast) %>%
+            mutate(homeworkAvg = mean(grade)/100)
+    })
+    
+    # Graph -- pulls data from the database and visualizes
+    # homework grades, returned to UI
+    output$avgHomeworkGraph <- renderEcharts4r({
+        df <- hwAvg()
+        df %>%
+            e_chart(last) %>%
+            e_scatter(homeworkAvg, symbol_size = 10) %>%
+            e_theme("westeros") %>%
+            e_tooltip(formatter = e_tooltip_item_formatter(
+                style = c("percent"),
+                digits = 2
+            )
+            ) %>%
+            e_x_axis(axisLabel = list(interval = 0, rotate = 45)) %>%
+            e_y_axis(formatter = e_axis_formatter(
+                style = c("percent"),
+                digits = 2,
+            )
+            ) %>%
+            e_legend(show = F)
+    })
+    
+    # Edit Review Server ----
+    # Review Grades Data -- pulls all review information from the data base
+    reviewGradesData <- reactive({
+        df <- getReviewGrades()
+        df <- df %>%
+            select(First = first_name, Last = last_name,`Review Id` = review_id,Topic = topic_id, Grade = grade)
+    })
+    
+    # Edit Review Grades-- implements database and display changes to let the 
+    # professor update review assignments
+    output$totalEditReviewGrades <- renderDT({
+        df <- reviewGradesData()
+        datatable(df, rownames = FALSE
+                  , selection = list(mode = 'single', target = 'row')
+                  , filter = 'top', caption = "Click a Row to Edit")
+    })
+    
+    # Creates interactive box to input changes
+    observeEvent(input$totalEditReviewGrades_rows_selected,{
+        rowNumber <- input$totalEditReviewGrades_rows_selected
+        df <- reviewGradesData()
+        rowData <- df[rowNumber, ]
+        showModal(
+            modalDialog(title = "Edit Grade", easyClose = T
+                        ,box(width = 12, status = "primary"
+                             , HTML("<b> Name: </b>")
+                             , renderText(paste(rowData$First, rowData$Last))
+                             , HTML("<b> Topic ID: </b>")
+                             , renderText(rowData$Topic)
+                             , pickerInput("grade", "Grade:", choices = c("M", "J", "A", "NA")
+                                           , selected = as.character(rowData$Grade))
+                        )
+                        , footer = fluidRow(
+                            column(width = 6
+                                   , actionBttn("gradeSave"
+                                                , "Save"
+                                                , icon = icon("save")
+                                                , style = "material-flat"
+                                                , block = T
+                                   )
+                            )
+                            , column(width = 6
+                                     , actionBttn("gradeDismiss"
+                                                  , "Dismiss"
+                                                  , icon = icon("close")
+                                                  , style = "material-flat"
+                                                  , block = T)
+                            )
+                        )
+            )
+        )
+    })
+    
+    # When the "Grade Dismiss" button is pressed
+    observeEvent(input$gradeDismiss,{
+        removeModal()
+    })
+    
+    #When the "Save Grade" button is pressed
+    observeEvent(input$gradeSave,{
+        rowNumber <- input$totalEditReviewGrades_rows_selected
+        df <- reviewGradesData()
+        rowData <- df[rowNumber, ]
+        topic_id <- rowData$Topic
+        newGrade <- as.character(input$grade)
+        review_id <- rowData[1, 3]
+        
+        df <- df_students %>%
+            filter(first_name == rowData$First) %>%
+            filter(last_name == rowData$Last) 
+        
+        student_id <- df$student_id
+        
+        # Write to Database
+        sql_query <- paste0("update Shiny.dbo.reviewGrades set grade = '", newGrade, "' where (topic_id = ", topic_id, " and student_id = ", student_id, " and review_id = ", review_id, ")")
+        dbExecute(con, sql_query)
+        
+        # Background App Refresh
+        sql_query <- 'Select * from Shiny.dbo.reviewGrades'
+        df_reviewGrades <- dbGetQuery(con, sql_query)
+        reactive$df_reviewGrades <- df_reviewGrades
+        
+        showNotification("Changes Saved to Remote Database.", type = c("message"), duration = 3)
+        
+        removeModal()
+    })
+    
+    
+    #  Add Review Button press --- implements button to make changes
+    observeEvent(input$addReview, {
+        showModal(
+            modalDialog(title = "Add a Review",  easyClose = T
+                        , box(width = 12, status = "primary", title = "Review Information"
+                              , fluidRow(
+                                  column(width = 6
+                                         , numericInput(inputId = "addReviewID", label = "Review ID", value = 1 + max(df_reviews$review_id))
+                                         , dateInput(inputId = "addReviewStartDate", label = "Date Assigned", value = 1 + max(df_reviews$date_assigned))
+                                  )
+                                  , column(width = 6
+                                           , textInput(inputId = "addReviewTitle", label = "Review Title", value = "Title")
+                                           , dateInput(inputId = "addReviewEndDate", label = "Date Due", value = 1 + max(df_reviews$date_due))
+                                  )
+                                  , column(width = 12
+                                           , textAreaInput(inputId = "addReviewDesc", label = " Review Description", value = "Description"))
+                              )
+                        )
+                        , footer = fluidRow(
+                            column(width = 6
+                                   , actionBttn("saveReview"
+                                                , "Save"
+                                                , icon = icon("save")
+                                                , style = "material-flat"
+                                                , color = "primary"
+                                                , block = T
+                                   )
+                            )
+                            , column(width = 6
+                                     , actionBttn("addReviewDismiss"
+                                                  , "Dismiss"
+                                                  , icon = icon("close")
+                                                  , style = "material-flat"
+                                                  , color = "primary"
+                                                  , block = T)
+                            )
+                        )
+            )
+        )
+    })
+    # Dismiss
+    observeEvent(input$addReviewDismiss,{
+        removeModal()
+    })
+    
+    # Saves the new assignment
+    observeEvent(input$saveReview, {
+        con <- db_connect()
+        row <- data_frame(Review_id = c(as.numeric(input$addReviewID))
+                          , date_assigned = c(as.character(input$addReviewStartDate))
+                          , date_due = c(as.character(input$addReviewEndDate))
+                          , title = c(as.character(input$addReviewTitle))
+                          , description = c(as.character(input$addReviewDesc))
+        )
+        
+        query <- sqlAppendTable(con, "shiny.dbo.reviews", quotes(row), row.names = FALSE)
+        
+        query_character <- as.character(query)
+        noDouble <- gsub('"',"",query)
+        noNew <- gsub('\n'," ",noDouble)
+        dbSendQuery(con, noNew)
+        
+        showNotification(paste0("Review Added as: ", as.character(input$addReviewID)))
+    })
+    
+    # Edit Homework Server ----
+    # DT output -- pulls homeworks from the database
+    homeworkGradesData <- reactive({
+        df <- getHomeworkGrades()
+        df <- df %>%
+            select(First = first_name, Last = last_name,`Homework Id` = homework_id, Grade = grade)
+    })
+    
+    #Data Table -- builds homeworks data table
+    output$editHomeworkGrades <- renderDT({
+        df <- homeworkGradesData()
+        datatable(df, rownames = FALSE, selection = list(mode = 'single', target = 'row'), filter = 'top', caption = "Click a Row to Edit")
+    })
+    
+    
+    # Edit Review Grades-- implements database and display changes to let the 
+    # professor update review assignments
+    observeEvent(input$editHomeworkGrades_rows_selected,{
+        rowNumber <- input$editHomeworkGrades_rows_selected
+        df <- homeworkGradesData()
+        rowData <- df[rowNumber, ]
+        showModal(
+            modalDialog(title = "Edit Grade", easyClose = T
+                        ,box(width = 12, status = "primary"
+                             , HTML("<b> Name: </b>")
+                             , renderText(paste(rowData$First, rowData$Last))
+                             , HTML("<b> Homework ID: </b>")
+                             , renderText(rowData[1,3])
+                             , numericInput("hwGrade", "Grade:",  value = as.numeric(rowData$Grade), max = 100)
+                        )
+                        , footer = fluidRow(
+                            column(width = 6
+                                   , actionBttn("hwgradeSave"
+                                                , "Save"
+                                                , icon = icon("save")
+                                                , style = "material-flat"
+                                                , block = T
+                                                , color = "primary"
+                                   )
+                            )
+                            , column(width = 6
+                                     , actionBttn("hwgradeDismiss"
+                                                  , "Dismiss"
+                                                  , icon = icon("close")
+                                                  , style = "material-flat"
+                                                  , color = "primary"
+                                                  , block = T)
+                            )
+                        )
+            )
+        )
+    })
+    
+    # Dismiss
+    observeEvent(input$hwgradeDismiss,{
+        removeModal()
+    })
+    #When the "Save Grade" button is pressed
+    observeEvent(input$hwgradeSave,{
+        rowNumber <- input$editHomeworkGrades_rows_selected
+        df <- homeworkGradesData()
+        rowData <- df[rowNumber, ]
+        newGrade <- as.character(input$hwGrade)
+        hw_ID <- rowData[1, 3]
+        
+        df <- df_students %>%
+            filter(first_name == rowData$First) %>%
+            filter(last_name == rowData$Last) 
+        
+        student_id <- df$student_id
+        
+        # Write to Database
+        sql_query <- paste0("update Shiny.dbo.homeworkGrades set grade = '", newGrade, "' where (homework_id = ", hw_ID, " and student_id = ", student_id, ")")
+        dbExecute(con, sql_query)
+        
+        # Background App Refresh
+        sql_query <- 'Select * from Shiny.dbo.homeworkGrades'
+        df_homeworkGrades <- dbGetQuery(con, sql_query)
+        reactive$df_homeworkGrades <- df_homeworkGrades
+        
+        showNotification("Changes Saved to Remote Database.", type = c("message"), duration = 3)
+        removeModal()
+    })
+    
+    
+    #  Add HW Button press --- implements interface for professor to add homeworks
+    observeEvent(input$addHW, {
+        showModal(
+            modalDialog(title = "Add a Homework",  easyClose = T
+                        , box(width = 12, status = "primary", title = "Homework Information"
+                              , fluidRow(
+                                  column(width = 6
+                                         , numericInput(inputId = "hwAddID", label = "Homework ID", value = 1 + max(df_homeworks$homework_id))
+                                         , dateInput(inputId = "addHWStartDate", label = "Date Assigned", value = 1 + max(df_homeworks$date_assigned))
+                                  )
+                                  , column(width = 6
+                                           , textInput(inputId = "hwAddTitle", label = "Homework Title", value = "Title")
+                                           , dateInput(inputId = "addHWEndDate", label = "Date Due", value = 1 + max(df_homeworks$date_due))
+                                  )
+                                  , column(width = 12
+                                           , textAreaInput(inputId = "hwAddDesc", label = " Homework Description", value = "Description"))
+                              )
+                        )
+                        , footer = fluidRow(
+                            column(width = 6
+                                   , actionBttn("saveHW"
+                                                , "Save"
+                                                , icon = icon("save")
+                                                , style = "material-flat"
+                                                , block = T
+                                                , color = "primary"
+                                   )
+                            )
+                            , column(width = 6
+                                     , actionBttn("hwAddDismiss"
+                                                  , "Dismiss"
+                                                  , icon = icon("close")
+                                                  , style = "material-flat"
+                                                  , color = "primary"
+                                                  , block = T)
+                                     
+                            )
+                        )
+            )
+        )
+    })
+    # Dismiss
+    observeEvent(input$hwAddDismiss,{
+        removeModal()
+    })
+    
+    # Inputs the changes to the database
+    observeEvent(input$saveHW, {
+        con <- db_connect()
+        row <- data_frame(homework_id = c(as.numeric(input$hwAddID))
+                          , date_assigned = c(as.character(input$addHWStartDate))
+                          , date_due = c(as.character(input$addHWEndDate))
+                          , title = c(as.character(input$hwAddTitle))
+                          , description = c(as.character(input$hwAddDesc))
+        )
+        
+        query <- sqlAppendTable(con, "shiny.dbo.homeworks", quotes(row), row.names = FALSE)
+        
+        query_character <- as.character(query)
+        noDouble <- gsub('"',"",query)
+        noNew <- gsub('\n'," ",noDouble)
+        dbSendQuery(con, noNew)
+        
+        showNotification(paste0("Homework Added as: ", as.character(input$hwAddTitle)))
+    })
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
