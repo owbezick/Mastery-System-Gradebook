@@ -14,4 +14,3 @@ grade_max <- function(x){
   return(max)
 }
 
-test <- grade_max(x)
