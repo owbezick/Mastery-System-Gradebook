@@ -5,7 +5,7 @@
 # Source Libraries
 source("libraries.R", local = TRUE)
 source("data_intake.R", local = TRUE)
-
+source("utils.R", local = TRUE)
 # Define UI
 ui <- dashboardPage(
   dashboardHeader(title = "Student View"
@@ -34,20 +34,23 @@ ui <- dashboardPage(
                  , tabPanel(title = "Exam Grades"
                             , box(width = 12, status = "primary"
                                   , fluidRow(
-                                    column(width = 4
-                                           , valueBoxOutput("mastery", width = 12)
+                                    column(width = 3
+                                           , valueBoxOutput("topics", width = 12)
                                     )
-                                    , column(width = 4
+                                    ,column(width = 3
+                                            , valueBoxOutput("mastery", width = 12)
+                                    )
+                                    , column(width = 3
                                              , valueBoxOutput("journey", width = 12)
                                     )
-                                    , column(width = 4
+                                    , column(width = 3
                                              , valueBoxOutput("apprentice", width = 12)
                                     )
                                   )
                             )
                             , fluidRow(
                               column(width = 12
-                                     , box(width = 6, status = "primary"
+                                     , box(width = 6, status = "primary", title = "All Exam Data"
                                            , DTOutput("exam_grades_dt")
                                      )
                                      , box(width = 6, status = "primary"
@@ -59,7 +62,9 @@ ui <- dashboardPage(
                  , tabPanel(title = "Homework Grades"
                             , fluidRow(
                               column(width = 6
-                                     , valueBoxOutput("homework_average", width = 12)
+                                     , box(width = 12, status = "primary"
+                                           , valueBoxOutput("homework_average", width = 12)
+                                     )
                                      , box(width = 12, status = "primary"
                                            , DTOutput("homework_grades_dt")
                                      )
@@ -221,8 +226,11 @@ server <- function(input, output) {
       select(`Exam ID` = exam_id, `Topic ID` = topic_id, Grade = grade)
     datatable(df, rownames = F)
   })
+  
   output$gradeBar <- renderEcharts4r({
     df <- exam_grades() %>%
+      group_by(topic_id) %>%
+      summarise(grade = grade_max(grade)) %>%
       select(grade) %>%
       filter(grade != "NA") %>%
       count(grade)
@@ -253,6 +261,8 @@ server <- function(input, output) {
   
   output$mastery <- renderValueBox({
     value <- exam_grades() %>%
+      group_by(topic_id) %>%
+      summarise(grade = grade_max(grade)) %>%
       filter(grade == "M") %>%
       count() %>%
       pull()
@@ -262,6 +272,8 @@ server <- function(input, output) {
   
   output$journey<- renderValueBox({
     value <- exam_grades() %>%
+      group_by(topic_id) %>%
+      summarise(grade = grade_max(grade)) %>%
       filter(grade == "J") %>%
       count() %>%
       pull()
@@ -270,10 +282,21 @@ server <- function(input, output) {
   
   output$apprentice <- renderValueBox({
     value <- exam_grades() %>%
+      group_by(topic_id) %>%
+      summarise(grade = grade_max(grade)) %>%
       filter(grade == "A") %>%
       count() %>%
       pull()
     valueBox(value = value, subtitle = "Apprentice")
+  })
+  
+  output$topics <- renderValueBox({
+    value <- exam_grades() %>%
+      select(topic_id) %>%
+      distinct() %>%
+      nrow()
+    
+    valueBox(value = value, subtitle = "Topics Covered")
   })
   
   # Homework Grades ----
@@ -296,11 +319,11 @@ server <- function(input, output) {
       e_legend(show=F)
   })
   
-output$homework_average <- renderValueBox({
-  value <- homework_grades() %>%
-    summarise(avg = mean(grade)) %>% pull()
-  valueBox(value, "Homework Average")
-})
+  output$homework_average <- renderValueBox({
+    value <- homework_grades() %>%
+      summarise(avg = mean(grade)) %>% pull()
+    valueBox(value, "Homework Average")
+  })
   
 }
 
