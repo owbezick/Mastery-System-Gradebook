@@ -421,8 +421,7 @@ server <- function(input, output) {
     })
     
     
-    # Edit Review Grades-- implements database and display changes to let the 
-    # professor update review assignments
+    # Edit Review Grades 
     observeEvent(input$editHomeworkGrades_rows_selected,{
         
         rowNumber <- input$editHomeworkGrades_rows_selected
@@ -493,17 +492,14 @@ server <- function(input, output) {
     
     #  Add HW Button press --- implements interface for professor to add homeworks
     observeEvent(input$addHW, {
+        df_homeworks <- homework_grades()
         showModal(
             modalDialog(title = "Add a Homework",  easyClose = T
                         , box(width = 12, status = "primary", title = "Homework Information"
                               , fluidRow(
                                   column(width = 6
                                          , numericInput(inputId = "hwAddID", label = "Homework ID", value = 1 + max(df_homeworks$homework_id))
-                                         , dateInput(inputId = "addHWStartDate", label = "Date Assigned", value = 1 + max(df_homeworks$date_assigned))
-                                  )
-                                  , column(width = 6
-                                           , textInput(inputId = "hwAddTitle", label = "Homework Title", value = "Title")
-                                           , dateInput(inputId = "addHWEndDate", label = "Date Due", value = 1 + max(df_homeworks$date_due))
+                                         , dateInput(inputId = "addHWStartDate", label = "Date", value = df_homeworks$date[1])
                                   )
                                   , column(width = 12
                                            , textAreaInput(inputId = "hwAddDesc", label = " Homework Description", value = "Description"))
@@ -541,20 +537,49 @@ server <- function(input, output) {
     observeEvent(input$saveHW, {
         con <- db_connect()
         row <- data_frame(homework_id = c(as.numeric(input$hwAddID))
-                          , date_assigned = c(as.character(input$addHWStartDate))
-                          , date_due = c(as.character(input$addHWEndDate))
-                          , title = c(as.character(input$hwAddTitle))
                           , description = c(as.character(input$hwAddDesc))
+                          , date = c(as.character(input$addHWStartDate))
         )
-        
-        query <- sqlAppendTable(con, "shiny.dbo.homeworks", quotes(row), row.names = FALSE)
-        
+        quotes <- quotes(row)[1,]
+        query <- sqlAppendTable(con, "shiny.dbo.homework_def", quotes(row)[1,], row.names = FALSE)
         query_character <- as.character(query)
         noDouble <- gsub('"',"",query)
         noNew <- gsub('\n'," ",noDouble)
         dbSendQuery(con, noNew)
         
-        showNotification(paste0("Homework Added as: ", as.character(input$hwAddTitle)))
+        #Background App refresh
+        sql_query <- 'Select * from Shiny.dbo.homework_def'
+        df_homework_def <- dbGetQuery(con, sql_query)
+        reactive$homework_def <- df_homework_def
+        
+        # Add homework grades as 0
+        ls_student_id <- reactive$homework_grade %>%
+            select(student_id) %>%
+            distinct() %>%
+            pull()
+        
+        new_grade_df <- data_frame(
+            student_id = ls_student_id
+            , homework_id = rep(as.numeric(input$hwAddID), length(ls_student_id))
+            , grade = rep(0,length(ls_student_id) )
+        )
+        
+        for(i in 1:nrow(new_grade_df)){
+            test <- quotes(new_grade_df[i,])
+            
+            query <- sqlAppendTable(con, "Shiny.dbo.homework_grade", test, row.names = FALSE)
+            query_character <- as.character(query)
+            noDouble <- gsub('"',"",query)
+            noNew <- gsub('\n'," ",noDouble)
+            dbSendQuery(con, noNew)
+        }
+        
+        sql_query <- 'Select * from Shiny.dbo.homework_grade'
+        df_homework_grade <- dbGetQuery(con, sql_query)
+        reactive$homework_grade <- df_homework_grade
+        
+        showNotification(paste0("Homework added as id: ", as.character(input$hwAddID), "with grade of 0."))
+        removeModal()
     })
 }
 
