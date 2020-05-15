@@ -336,7 +336,6 @@ server <- function(input, output) {
         reactive$exam_grade <- df_examGrades
         
         showNotification("Changes Saved to Remote Database.", type = c("message"), duration = 3)
-        
         removeModal()
     })
     
@@ -349,7 +348,7 @@ server <- function(input, output) {
                               , fluidRow(
                                   column(width = 6
                                          , numericInput(inputId = "add_exam_id", label = "Review ID", value = 1 + max(exam_def$exam_id))
-                                         , numericInput(inputId = "add_exam_first", label = "Fist Topic", value = 1 + max(exam_def$first_topic))
+                                         , numericInput(inputId = "add_exam_first", label = "First Topic", value = 1 + max(exam_def$first_topic))
                                   )
                                   , column(width = 6
                                            , dateInput(inputId = "add_exam_date", label = "Date Assigned", value = 1 + max(exam_def$date))
@@ -404,11 +403,47 @@ server <- function(input, output) {
         sql_query <- 'Select * from Shiny.dbo.exam_def'
         df_examdef <- dbGetQuery(con, sql_query)
         reactive$exam_def <- df_examdef
-        
-        showNotification(paste0("Exam added as id: ", as.character(input$add_exam_id)))
+        first_topic <- as.numeric(input$add_exam_first)
+        last_topic <- as.numeric(input$add_exam_last)
+        times <- last_topic - first_topic + 1
+        # Add in new grades as NA
+        ls_student_id <- reactive$homework_grade %>%
+            select(student_id) %>%
+            distinct() %>%
+            pull()
         
         # Add exam to grades as NA
+        for(i in 1:length(ls_student_id)){
+            student_id = c(rep(ls_student_id[i], times))
+            exam_id = c(rep(as.numeric(input$add_exam_id), times))
+            grade = c(rep("NA", times))
+            topic_id = c(seq(first_topic, last_topic))
+        }
         
+        new_grade_df <- data_frame(
+            student_id = student_id
+            , exam_id = exam_id
+            , grade = grade
+            , topic_id = topic_id
+        )
+        
+        for(i in 1:nrow(new_grade_df)){
+            row <- quotes(new_grade_df[i,])
+            query <- sqlAppendTable(con, "Shiny.dbo.exam_grade", row, row.names = FALSE)
+            query_character <- as.character(query)
+            noDouble <- gsub('"',"",query)
+            noNew <- gsub('\n'," ",noDouble)
+            dbSendQuery(con, noNew)
+        }
+        
+        sql_query <- 'Select * from Shiny.dbo.exam_grade'
+        df_homework_grade <- dbGetQuery(con, sql_query)
+        reactive$homework_grade <- df_homework_grade
+        
+        showNotification(paste0("Exam added as id: ", as.character(input$add_exam_id), "with grade NA"))
+        
+        
+        removeModal()
         
     })
     
