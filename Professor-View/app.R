@@ -413,16 +413,10 @@ server <- function(input, output) {
     })
     
     # Edit Homework Server ----
-    # DT output -- pulls homeworks from the database
-    homeworkGradesData <- reactive({
-        df <- getHomeworkGrades()
-        df <- df %>%
-            select(First = first_name, Last = last_name,`Homework Id` = homework_id, Grade = grade)
-    })
-    
     #Data Table -- builds homeworks data table
     output$editHomeworkGrades <- renderDT({
-        df <- homeworkGradesData()
+        df <- homework_grades() %>%
+            select(Name = firstLast,`Homework Id` = homework_id, Grade = grade)
         datatable(df, rownames = FALSE, selection = list(mode = 'single', target = 'row'), filter = 'top', caption = "Click a Row to Edit")
     })
     
@@ -430,17 +424,18 @@ server <- function(input, output) {
     # Edit Review Grades-- implements database and display changes to let the 
     # professor update review assignments
     observeEvent(input$editHomeworkGrades_rows_selected,{
+        
         rowNumber <- input$editHomeworkGrades_rows_selected
-        df <- homeworkGradesData()
+        df <- homework_grades()
         rowData <- df[rowNumber, ]
         showModal(
             modalDialog(title = "Edit Grade", easyClose = T
                         ,box(width = 12, status = "primary"
                              , HTML("<b> Name: </b>")
-                             , renderText(paste(rowData$First, rowData$Last))
+                             , renderText(rowData$firstLast)
                              , HTML("<b> Homework ID: </b>")
                              , renderText(rowData[1,3])
-                             , numericInput("hwGrade", "Grade:",  value = as.numeric(rowData$Grade), max = 100)
+                             , numericInput("hwGrade", "Grade:",  value = as.numeric(rowData$grade), max = 100)
                         )
                         , footer = fluidRow(
                             column(width = 6
@@ -472,8 +467,7 @@ server <- function(input, output) {
     #When the "Save Grade" button is pressed
     observeEvent(input$hwgradeSave,{
         rowNumber <- input$editHomeworkGrades_rows_selected
-        df <- homeworkGradesData()
-        browser()
+        df <- homework_grades()
         rowData <- df[rowNumber, ]
         newGrade <- as.character(input$hwGrade)
         hw_ID <- rowData[1, 3]

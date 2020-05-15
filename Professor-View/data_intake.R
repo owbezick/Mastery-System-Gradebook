@@ -102,7 +102,7 @@ exam_grades <- reactive({
 })
 
 homework_grades <- reactive({
-  merge(homework_def, homework_grade) %>% merge(student_def) %>%
+  merge(reactive$homework_def, reactive$homework_grade) %>% merge(student_def) %>%
     mutate(firstLast = paste(first, last)) %>%
     select(firstLast, last, homework_id, grade)
 })
