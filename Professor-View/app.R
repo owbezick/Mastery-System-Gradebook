@@ -15,8 +15,8 @@ ui <- dashboardPage(
         sidebarMenu(
             menuItem(tabName = "home", text = "Home", icon = icon("home"))
             , menuItem(tabName ="viewGrades", text = "View Grades", icon = icon("chalkboard")
-                       , menuSubItem(tabName = "examGrades", text = "View Review Grades")
-                       , menuSubItem(tabName = "homeworkGrades", text = "View Exam Grades")
+                       , menuSubItem(tabName = "examGrades", text = "View Exam Grades")
+                       , menuSubItem(tabName = "homeworkGrades", text = "View Homework Grades")
             )
             , menuItem(tabName ="editGrades", text = "Edit Grades", icon = icon("chalkboard-teacher")
                        , menuSubItem(tabName = "editReviewGrades", text = "Edit Exam Grades")

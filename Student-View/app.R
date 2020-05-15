@@ -23,7 +23,7 @@ ui <- dashboardPage(
         tabName = "home"
         , HTML("<center><h1> Mastery Gradebook Dashboard </h1></center>")
         , column(width = 12
-                 , fluidRow(uiOutput("student_profile"), uiOutput("prof_profile")
+                 , fluidRow(uiOutput("student_profile"), uiOutput("prof_profile") 
                  )
         )
         , uiOutput("schedule")
