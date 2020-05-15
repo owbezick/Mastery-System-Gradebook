@@ -16,10 +16,10 @@ ui <- dashboardPage(
             menuItem(tabName = "home", text = "Home", icon = icon("home"))
             , menuItem(tabName ="viewGrades", text = "View Grades", icon = icon("chalkboard")
                        , menuSubItem(tabName = "examGrades", text = "View Review Grades")
-                       , menuSubItem(tabName = "homeworkGrades", text = "View Homework Grades")
+                       , menuSubItem(tabName = "homeworkGrades", text = "View Exam Grades")
             )
             , menuItem(tabName ="editGrades", text = "Edit Grades", icon = icon("chalkboard-teacher")
-                       , menuSubItem(tabName = "editReviewGrades", text = "Edit Review Grades")
+                       , menuSubItem(tabName = "editReviewGrades", text = "Edit Exam Grades")
                        , menuSubItem(tabName = "editHomeworkGrades", text = "Edit Homework Grades")
             )
         )
@@ -415,13 +415,17 @@ server <- function(input, output) {
             pull()
         
         # Add exam to grades as NA
+        student_id <- c()
+        exam_id <- c()
+        grade <- c()
+        topic_id <- c()
         for(i in 1:length(ls_student_id)){
-            student_id = c(rep(ls_student_id[i], times))
-            exam_id = c(rep(as.numeric(input$add_exam_id), times))
-            grade = c(rep("NA", times))
-            topic_id = c(seq(first_topic, last_topic))
+            student_id = append(student_id, c(rep(ls_student_id[i], times)))
+            exam_id = append(exam_id, c(rep(as.numeric(input$add_exam_id), times)))
+            grade = append(grade, c(rep("NA", times)))
+            topic_id = append(topic_id, c(seq(first_topic, last_topic)))
         }
-        
+
         new_grade_df <- data_frame(
             student_id = student_id
             , exam_id = exam_id
