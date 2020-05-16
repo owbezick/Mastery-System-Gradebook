@@ -35,52 +35,54 @@ ui <- dashboardPage(
         , tags$style(".small-box.bg-navy { background-color: #5298c6 !important; color: #000000 !important; }")
         , tags$style(".small-box.bg-yellow { background-color: #5ac4e6 !important; color: #000000 !important; }")
         , tags$style(".small-box.bg-green { background-color: #edafda !important; color: #000000 !important; }")
-        , tabBox(width = 12
-                 , tabPanel(title = "Exam Grades"
-                            , box(width = 12, status = "primary"
-                                  , fluidRow(
-                                    column(width = 3
-                                           , valueBoxOutput("topics", width = 12)
+        , fluidRow(
+          tabBox(width = 12
+                   , tabPanel(title = "Exam Grades"
+                              , box(width = 12, status = "primary"
+                                    , fluidRow(
+                                      column(width = 3
+                                             , valueBoxOutput("topics", width = 12)
+                                      )
+                                      ,column(width = 3
+                                              , valueBoxOutput("mastery", width = 12)
+                                      )
+                                      , column(width = 3
+                                               , valueBoxOutput("journey", width = 12)
+                                      )
+                                      , column(width = 3
+                                               , valueBoxOutput("apprentice", width = 12)
+                                      )
                                     )
-                                    ,column(width = 3
-                                            , valueBoxOutput("mastery", width = 12)
-                                    )
-                                    , column(width = 3
-                                             , valueBoxOutput("journey", width = 12)
-                                    )
-                                    , column(width = 3
-                                             , valueBoxOutput("apprentice", width = 12)
-                                    )
-                                  )
-                            )
-                            , fluidRow(
-                              column(width = 12
-                                     , box(width = 6, status = "primary", title = "All Exam Grades"
-                                           , DTOutput("exam_grades_dt")
-                                     )
-                                     , box(width = 6, status = "primary", title = "Top Grades"
-                                           , echarts4rOutput("gradeBar")
-                                     )
                               )
-                            )
-                 )
-                 , tabPanel(title = "Homework Grades"
-                            , fluidRow(
-                              column(width = 6
-                                     , box(width = 12, status = "primary"
-                                           , valueBoxOutput("homework_average", width = 12)
-                                     )
-                                     , box(width = 12, status = "primary", title = "All Homework Grades"
-                                           , DTOutput("homework_grades_dt")
-                                     )
-                              )
-                              , column(width = 6
-                                       , box(width = 12, status = "primary", title = "Plotted Homework Grades"
-                                             , echarts4rOutput("homeworkScatter")
+                              , fluidRow(
+                                column(width = 12
+                                       , box(width = 6, status = "primary", title = "All Exam Grades", height = "550"
+                                             , DTOutput("exam_grades_dt")
                                        )
+                                       , box(width = 6, status = "primary", title = "Top Grades",  height = "550"
+                                             , echarts4rOutput("gradeBar")
+                                       )
+                                )
                               )
-                            )
-                 )
+                   )
+                   , tabPanel(title = "Homework Grades"
+                              , fluidRow(
+                                column(width = 6
+                                       , box(width = 12, status = "primary", height = "100%"
+                                             , valueBoxOutput("homework_average", width = 12)
+                                       )
+                                       , box(width = 12, status = "primary", title = "All Homework Grades"
+                                             , DTOutput("homework_grades_dt")
+                                       )
+                                )
+                                , column(width = 6
+                                         , box(width = 12, status = "primary", title = "Plotted Homework Grades", height = "100%"
+                                               , echarts4rOutput("homeworkScatter")
+                                         )
+                                )
+                              )
+                   )
+          )
         )
       )
     )
@@ -222,6 +224,7 @@ server <- function(input, output) {
     req(is$auth)
     fluidRow(column(width = 12
                     , box(width = 12, title = "Assignment Schedule", status = "primary"
+                          , HTML("Select an assignment for details")
                           , timevisOutput("gantt")
                     )
     )
@@ -266,7 +269,7 @@ server <- function(input, output) {
       df <- exam_def %>%
         filter(exam_id == assignment_id)
       showModal(
-        modalDialog(title = "Exam Details"
+        modalDialog(title = "Exam Details", footer = NULL, easyClose = T
                     , box(width = 12, status = "primary"
                           , column(width = 12
                                    , fluidRow(
@@ -400,7 +403,7 @@ server <- function(input, output) {
   output$homework_average <- renderValueBox({
     value <- homework_grades() %>%
       summarise(avg = mean(grade)) %>% pull()
-    valueBox(value, "Homework Average", color = "navy")
+    valueBox(paste0(as.character(value), "%"), "Homework Average", color = "navy")
   })
   
 }

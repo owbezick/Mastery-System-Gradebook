@@ -29,7 +29,22 @@ ui <- dashboardPage(
             tabItem(
                 tabName = "home"
                 , HTML("<center><h1> Mastery Gradebook Dashboard </h1></center>")
+                , column(width = 3
+                         ,box(width = 12, status = "primary"
+                              , tags$head(tags$style(HTML(".small-box {height: 85px}")))
+                              , valueBoxOutput("total_exams", width = 12)
+                              , valueBoxOutput("total_homeworks", width = 12)
+                         )
+                )
+                , column(width = 9
+                         , fluidRow(box(width = 12, status = "primary", title = "Assignment Schedule"
+                                        , HTML("Select an assignment for details")
+                                        , timevisOutput("gantt")
+                         )
+                         )
+                )
             )
+            
             , tabItem(
                 tabName = "examGrades"
                 ,fluidRow(
@@ -43,10 +58,10 @@ ui <- dashboardPage(
                     )
                 )
                 , fluidRow(
-                    box(width = 6, status = "primary", title = "All Topic Grades"
+                    box(width = 6, status = "primary", title = "All Topic Grades", height = "550"
                         , DTOutput("totalExamGrades")
                     )
-                    , box(width = 6, stauts = "primary", title = "Top Grades", status = "primary"
+                    , box(width = 6, stauts = "primary", title = "Top Grades", status = "primary", height = "550"
                           , echarts4rOutput("gradeBar"))
                 )
             )
@@ -63,10 +78,10 @@ ui <- dashboardPage(
                     )
                 )
                 , fluidRow(
-                    box(width = 6, status = "primary",  title = "Homework Grades"
+                    box(width = 6, status = "primary",  title = "Homework Grades", height = "550"
                         , DTOutput("homeworkGradeTable")
                     )
-                    , box(width = 6, status = "primary", title = "Homework Averages"
+                    , box(width = 6, status = "primary", title = "Homework Averages", height = "550"
                           , echarts4rOutput("avgHomeworkGraph")
                     )
                 )
@@ -99,6 +114,112 @@ ui <- dashboardPage(
 
 # Define server logic 
 server <- function(input, output) {
+    output$total_exams <- renderValueBox({
+        value <- reactive$exam_def %>%
+            nrow()
+        valueBox(value, subtitle = "Exams")
+    })
+    output$total_homeworks <- renderValueBox({
+        value <- reactive$homework_def %>%
+            nrow()
+        valueBox(value, subtitle = "Homeworks")
+    })
+    # Schedule ----
+    output$gantt <- renderTimevis({
+        exams <- exam_def %>%
+            mutate(content = paste("Exam", exam_id)) %>%
+            mutate(id = paste0("E", exam_id)) %>%
+            select(content = content, start = date, id = id)
+        homeworks <- homework_def %>%
+            mutate(content = paste("Homework", homework_id))%>%
+            mutate(id = paste0("H", homework_id)) %>%
+            select(content = content, start = date, id = id)
+        
+        assignments <- rbind(exams,homeworks)
+        timevis(assignments)
+    })
+    
+    output$schedule <- renderUI({ 
+        req(is$auth)
+        fluidRow(column(width = 12
+                        , box(width = 12, title = "Assignment Schedule", status = "primary"
+                              , HTML("Select an assignment for details")
+                              , timevisOutput("gantt")
+                        )
+        )
+        )
+    })
+    
+    observeEvent(input$gantt_selected,{
+        input <- input$gantt_selected
+        assignemnt_type <- substr(input,1,1)
+        assignment_id <- as.numeric(substr(input, 2,2))
+        if(assignemnt_type == "H"){
+            df <- homework_def %>%
+                filter(homework_id == assignment_id)
+            
+            showModal(
+                modalDialog(title = "Homework Details"
+                            , box(width = 12, status = "primary"
+                                  , column(width = 12
+                                           , fluidRow(
+                                               column(width = 12
+                                                      , HTML("<b> Homework ID: </b>")
+                                                      , df$homework_id
+                                               )
+                                           )
+                                           , fluidRow(
+                                               column(width = 12
+                                                      , HTML("<b> Homework Description: </b>")
+                                                      , df$description
+                                               )
+                                           )
+                                           , fluidRow(
+                                               column(width = 12
+                                                      , HTML("<b> Homework Date: </b>")
+                                                      , df$date
+                                               )
+                                           )
+                                  )
+                            )
+                )
+            )
+        } else{
+            df <- exam_def %>%
+                filter(exam_id == assignment_id)
+            showModal(
+                modalDialog(title = "Exam Details", footer = NULL, easyClose = T
+                            , box(width = 12, status = "primary"
+                                  , column(width = 12
+                                           , fluidRow(
+                                               column(width = 12
+                                                      , HTML("<b> Exam ID: </b>")
+                                                      , df$exam_id
+                                               )
+                                           )
+                                           , fluidRow(
+                                               column(width = 12
+                                                      , HTML("<b> Topics Covered: </b>")
+                                               )
+                                               , column(width = 6
+                                                        , HTML("<b> First: </b>")
+                                                        , df$first_topic)
+                                               , column(width = 6
+                                                        , HTML("<b> Last: </b>")
+                                                        , df$last_topic)
+                                           )
+                                           , fluidRow(
+                                               column(width = 12
+                                                      , HTML("<b> Exam Date: </b>")
+                                                      , df$date
+                                               )
+                                           )
+                                  )
+                            )
+                )
+            )
+        }
+    })
     
     # View Review Server ---- 
     # List of students by ID
@@ -425,7 +546,7 @@ server <- function(input, output) {
             grade = append(grade, c(rep("NA", times)))
             topic_id = append(topic_id, c(seq(first_topic, last_topic)))
         }
-
+        
         new_grade_df <- data_frame(
             student_id = student_id
             , exam_id = exam_id
