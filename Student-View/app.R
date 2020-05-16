@@ -31,6 +31,10 @@ ui <- dashboardPage(
       )
       , tabItem(
         tabName = "viewGrades"
+        , tags$style(".small-box.bg-red { background-color: #516b91 !important; color: #000000 !important; }")
+        , tags$style(".small-box.bg-navy { background-color: #5298c6 !important; color: #000000 !important; }")
+        , tags$style(".small-box.bg-yellow { background-color: #5ac4e6 !important; color: #000000 !important; }")
+        , tags$style(".small-box.bg-green { background-color: #edafda !important; color: #000000 !important; }")
         , tabBox(width = 12
                  , tabPanel(title = "Exam Grades"
                             , box(width = 12, status = "primary"
@@ -51,10 +55,10 @@ ui <- dashboardPage(
                             )
                             , fluidRow(
                               column(width = 12
-                                     , box(width = 6, status = "primary", title = "All Exam Data"
+                                     , box(width = 6, status = "primary", title = "All Exam Grades"
                                            , DTOutput("exam_grades_dt")
                                      )
-                                     , box(width = 6, status = "primary"
+                                     , box(width = 6, status = "primary", title = "Top Grades"
                                            , echarts4rOutput("gradeBar")
                                      )
                               )
@@ -66,12 +70,12 @@ ui <- dashboardPage(
                                      , box(width = 12, status = "primary"
                                            , valueBoxOutput("homework_average", width = 12)
                                      )
-                                     , box(width = 12, status = "primary"
+                                     , box(width = 12, status = "primary", title = "All Homework Grades"
                                            , DTOutput("homework_grades_dt")
                                      )
                               )
                               , column(width = 6
-                                       , box(width = 12, status = "primary"
+                                       , box(width = 12, status = "primary", title = "Plotted Homework Grades"
                                              , echarts4rOutput("homeworkScatter")
                                        )
                               )
@@ -202,11 +206,13 @@ server <- function(input, output) {
   # Schedule ----
   output$gantt <- renderTimevis({
     exams <- exam_def %>%
-      mutate(id = paste("Exam", exam_id)) %>%
-      select(content = id, start = date)
+      mutate(content = paste("Exam", exam_id)) %>%
+      mutate(id = paste0("E", exam_id)) %>%
+      select(content = content, start = date, id = id)
     homeworks <- homework_def %>%
-      mutate(id = paste("Homework", homework_id))%>%
-      select(content = id, start = date)
+      mutate(content = paste("Homework", homework_id))%>%
+      mutate(id = paste0("H", homework_id)) %>%
+      select(content = content, start = date, id = id)
     
     assignments <- rbind(exams,homeworks)
     timevis(assignments)
@@ -215,12 +221,83 @@ server <- function(input, output) {
   output$schedule <- renderUI({ 
     req(is$auth)
     fluidRow(column(width = 12
-                    , box(width = 12, title = "Assignment Schedule", status = "primary" , timevisOutput("gantt")
+                    , box(width = 12, title = "Assignment Schedule", status = "primary"
+                          , timevisOutput("gantt")
                     )
     )
     )
   })
   
+  observeEvent(input$gantt_selected,{
+    input <- input$gantt_selected
+    assignemnt_type <- substr(input,1,1)
+    assignment_id <- as.numeric(substr(input, 2,2))
+    if(assignemnt_type == "H"){
+      df <- homework_def %>%
+        filter(homework_id == assignment_id)
+      
+      showModal(
+        modalDialog(title = "Homework Details"
+                    , box(width = 12, status = "primary"
+                          , column(width = 12
+                                   , fluidRow(
+                                     column(width = 12
+                                            , HTML("<b> Homework ID: </b>")
+                                            , df$homework_id
+                                     )
+                                   )
+                                   , fluidRow(
+                                     column(width = 12
+                                            , HTML("<b> Homework Description: </b>")
+                                            , df$description
+                                     )
+                                   )
+                                   , fluidRow(
+                                     column(width = 12
+                                            , HTML("<b> Homework Date: </b>")
+                                            , df$date
+                                     )
+                                   )
+                          )
+                    )
+        )
+      )
+    } else{
+      df <- exam_def %>%
+        filter(exam_id == assignment_id)
+      showModal(
+        modalDialog(title = "Exam Details"
+                    , box(width = 12, status = "primary"
+                          , column(width = 12
+                                   , fluidRow(
+                                     column(width = 12
+                                            , HTML("<b> Exam ID: </b>")
+                                            , df$exam_id
+                                     )
+                                   )
+                                   , fluidRow(
+                                     column(width = 12
+                                            , HTML("<b> Topics Covered: </b>")
+                                     )
+                                     , column(width = 6
+                                              , HTML("<b> First: </b>")
+                                              , df$first_topic)
+                                     , column(width = 6
+                                              , HTML("<b> Last: </b>")
+                                              , df$last_topic)
+                                   )
+                                   , fluidRow(
+                                     column(width = 12
+                                            , HTML("<b> Exam Date: </b>")
+                                            , df$date
+                                     )
+                                   )
+                          )
+                    )
+        )
+      )
+    }
+  })
   # Exam Grades ----
   output$exam_grades_dt <- renderDT({
     df <- exam_grades() %>%
@@ -268,7 +345,7 @@ server <- function(input, output) {
       count() %>%
       pull()
     
-    valueBox(value = value, subtitle = "Mastered")
+    valueBox(value = value, subtitle = "Mastered", color = "green")
   })
   
   output$journey<- renderValueBox({
@@ -278,7 +355,7 @@ server <- function(input, output) {
       filter(grade == "J") %>%
       count() %>%
       pull()
-    valueBox(value = value, subtitle = "Journeyman")
+    valueBox(value = value, subtitle = "Journeyman", color = "yellow")
   })
   
   output$apprentice <- renderValueBox({
@@ -288,7 +365,7 @@ server <- function(input, output) {
       filter(grade == "A") %>%
       count() %>%
       pull()
-    valueBox(value = value, subtitle = "Apprentice")
+    valueBox(value = value, subtitle = "Apprentice", color = "red")
   })
   
   output$topics <- renderValueBox({
@@ -297,7 +374,7 @@ server <- function(input, output) {
       distinct() %>%
       nrow()
     
-    valueBox(value = value, subtitle = "Topics Covered")
+    valueBox(value = value, subtitle = "Topics Covered", color = "navy")
   })
   
   # Homework Grades ----
@@ -323,7 +400,7 @@ server <- function(input, output) {
   output$homework_average <- renderValueBox({
     value <- homework_grades() %>%
       summarise(avg = mean(grade)) %>% pull()
-    valueBox(value, "Homework Average")
+    valueBox(value, "Homework Average", color = "navy")
   })
   
 }
