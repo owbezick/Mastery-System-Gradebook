@@ -7,9 +7,10 @@ source("data_intake.R", local = TRUE)
 source("utils.R", local = TRUE)
 
 # Define UI
-ui <- dashboardPage(
-    dashboardHeader(title = "Professor View" 
-    )
+ui <- dashboardPage(skin = "black"
+    , dashboardHeader(title = "Professor View" 
+                      , tags$li(class = "dropdown", tags$img(height = "40px", src='davidson_logo_white.png', hspace = "4", vspace ="4")
+    ))
     # Sidebar ----
     , dashboardSidebar( 
         sidebarMenu(
@@ -25,19 +26,68 @@ ui <- dashboardPage(
         )
     )
     , dashboardBody(
-        tabItems(
+        # Custom CSS Formating ----
+        tags$head(
+            tags$style(
+                HTML('
+                          .skin-red .main-header .logo {
+                            background-color: #d73925;
+                            color: #000;
+                            border-bottom: 0 solid transparent;
+                          }
+                          .skin-black .main-header .navbar {
+                            background-color:#1f2d33;
+                          }
+                          .skin-black .main-header .navbar>.sidebar-toggle {
+                          color: #eee;
+                          }
+                          .box.box-danger {
+                          border-top-color: #ac1a2f;
+                          }
+                          .small-box.bg-red{ 
+                          background-color: #ac1a2f !important; color: #eee !important; 
+                          }
+                          .skin-black .main-header>.logo {
+                          background-color: #ac1a2f;
+                          color: #ffffff;
+                          border-bottom: 0 solid transparent;
+                          border-right: 1px solid #eee;
+                          }
+                          .main-header .logo {
+                          display: block;
+                          float: left;
+                          height: 50px;
+                          font-size: 17px;
+                          line-height: 50px;
+                          text-align: center;
+                          width: 230px;
+                          font-family: "Rubik",Helvetica,Arial,Lucida,sans-serif;
+                          padding: 0 15px;
+                          font-weight: 300;
+                          overflow: hidden;
+                          }
+                          .h3 {
+                          font-family: "Rubik",Helvetica,Arial,Lucida,sans-serif;
+                          }
+                          .body {
+                          font-family: "Rubik",Helvetica,Arial,Lucida,sans-serif;
+                          }
+                            ')
+                )
+            )
+        , tabItems(
             tabItem(
                 tabName = "home"
                 , HTML("<center><h1> Mastery Gradebook Dashboard </h1></center>")
                 , column(width = 3
-                         ,box(width = 12, status = "primary"
+                         ,box(width = 12, status = "danger"
                               , tags$head(tags$style(HTML(".small-box {height: 85px}")))
                               , valueBoxOutput("total_exams", width = 12)
                               , valueBoxOutput("total_homeworks", width = 12)
                          )
                 )
                 , column(width = 9
-                         , fluidRow(box(width = 12, status = "primary", title = "Assignment Schedule"
+                         , fluidRow(box(width = 12, status = "danger", title = "Assignment Schedule"
                                         , HTML("Select an assignment for details")
                                         , timevisOutput("gantt")
                          )
@@ -48,7 +98,7 @@ ui <- dashboardPage(
             , tabItem(
                 tabName = "examGrades"
                 ,fluidRow(
-                    box(width = 12, title = "Filter:", status = "primary" 
+                    box(width = 12, title = "Filter:", status = "danger" 
                         ,column(width = 6
                                 ,uiOutput("examStudentPicker")
                         )
@@ -58,17 +108,17 @@ ui <- dashboardPage(
                     )
                 )
                 , fluidRow(
-                    box(width = 6, status = "primary", title = "All Topic Grades", height = "550"
+                    box(width = 6, status = "danger", title = "All Topic Grades", height = "550"
                         , DTOutput("totalExamGrades")
                     )
-                    , box(width = 6, stauts = "primary", title = "Top Grades", status = "primary", height = "550"
+                    , box(width = 6, stauts = "danger", title = "Top Grades", status = "danger", height = "550"
                           , echarts4rOutput("gradeBar"))
                 )
             )
             , tabItem(
                 tabName = "homeworkGrades"
                 , fluidRow(
-                    box(width = 12, title = "Filter:", status = "primary" 
+                    box(width = 12, title = "Filter:", status = "danger" 
                         ,column(width = 6
                                 , uiOutput("hwStudentPicker")
                         )
@@ -78,19 +128,19 @@ ui <- dashboardPage(
                     )
                 )
                 , fluidRow(
-                    box(width = 6, status = "primary",  title = "Homework Grades", height = "550"
+                    box(width = 6, status = "danger",  title = "Homework Grades", height = "550"
                         , DTOutput("homeworkGradeTable")
                     )
-                    , box(width = 6, status = "primary", title = "Homework Averages", height = "550"
+                    , box(width = 6, status = "danger", title = "Homework Averages", height = "550"
                           , echarts4rOutput("avgHomeworkGraph")
                     )
                 )
             )
             , tabItem(
                 tabName = "editReviewGrades"
-                , actionBttn(inputId = "addReview", label = "Add Exam", style = "fill", color = "primary", block = T)
+                , actionBttn(inputId = "addReview", label = "Add Exam", style = "fill", color = "danger", block = T)
                 , fluidRow(
-                    box(width = 12, status = "primary", title = "Edit Exam Grades"
+                    box(width = 12, status = "danger", title = "Edit Exam Grades"
                         , column(width = 12
                                  , DTOutput("edit_exam_dt")
                         )
@@ -99,9 +149,9 @@ ui <- dashboardPage(
             )
             , tabItem(
                 tabName = "editHomeworkGrades"
-                , actionBttn(inputId = "addHW", label = "Add Homework Assignment", style = "fill", color = "primary", block = T)
+                , actionBttn(inputId = "addHW", label = "Add Homework Assignment", style = "fill", color = "danger", block = T)
                 , fluidRow(
-                    box(width = 12, status = "primary", title = "Edit Homework Grades"
+                    box(width = 12, status = "danger", title = "Edit Homework Grades"
                         , DTOutput("editHomeworkGrades")
                     )
                 )
@@ -117,12 +167,12 @@ server <- function(input, output) {
     output$total_exams <- renderValueBox({
         value <- reactive$exam_def %>%
             nrow()
-        valueBox(value, subtitle = "Exams")
+        valueBox(value, subtitle = "Exams", color= "red")
     })
     output$total_homeworks <- renderValueBox({
         value <- reactive$homework_def %>%
             nrow()
-        valueBox(value, subtitle = "Homeworks")
+        valueBox(value, subtitle = "Homeworks", color= "red")
     })
     # Schedule ----
     output$gantt <- renderTimevis({
@@ -142,7 +192,7 @@ server <- function(input, output) {
     output$schedule <- renderUI({ 
         req(is$auth)
         fluidRow(column(width = 12
-                        , box(width = 12, title = "Assignment Schedule", status = "primary"
+                        , box(width = 12, title = "Assignment Schedule", status = "danger"
                               , HTML("Select an assignment for details")
                               , timevisOutput("gantt")
                         )
@@ -160,7 +210,7 @@ server <- function(input, output) {
             
             showModal(
                 modalDialog(title = "Homework Details"
-                            , box(width = 12, status = "primary"
+                            , box(width = 12, status = "danger"
                                   , column(width = 12
                                            , fluidRow(
                                                column(width = 12
@@ -189,7 +239,7 @@ server <- function(input, output) {
                 filter(exam_id == assignment_id)
             showModal(
                 modalDialog(title = "Exam Details", footer = NULL, easyClose = T
-                            , box(width = 12, status = "primary"
+                            , box(width = 12, status = "danger"
                                   , column(width = 12
                                            , fluidRow(
                                                column(width = 12
@@ -300,7 +350,7 @@ server <- function(input, output) {
             e_bar("A", name = "Apprentice") %>%
             e_bar("J", name = "Journeyman")  %>%
             e_bar("M", name = "Master") %>%
-            e_theme("westeros") %>%
+            e_theme("dark") %>%
             e_tooltip() %>%
             e_legend(bottom = 0)
     })
@@ -368,7 +418,7 @@ server <- function(input, output) {
         df %>%
             e_chart(last) %>%
             e_scatter(homeworkAvg, symbol_size = 10) %>%
-            e_theme("westeros") %>%
+            e_theme("dark") %>%
             e_tooltip(formatter = e_tooltip_item_formatter(
                 style = c("percent"),
                 digits = 2
@@ -399,7 +449,7 @@ server <- function(input, output) {
         rowData <- df[rowNumber, ]
         showModal(
             modalDialog(title = "Edit Grade", easyClose = T
-                        ,box(width = 12, status = "primary"
+                        ,box(width = 12, status = "danger"
                              , HTML("<b> Name: </b>")
                              , renderText(paste(rowData$firstLast))
                              , HTML("<b> Topic ID: </b>")
@@ -465,7 +515,7 @@ server <- function(input, output) {
     observeEvent(input$addReview, {
         showModal(
             modalDialog(title = "Add an Exam",  easyClose = T
-                        , box(width = 12, status = "primary", title = "Exam Information"
+                        , box(width = 12, status = "danger", title = "Exam Information"
                               , fluidRow(
                                   column(width = 6
                                          , numericInput(inputId = "add_exam_id", label = "Review ID", value = 1 + max(exam_def$exam_id))
@@ -483,7 +533,7 @@ server <- function(input, output) {
                                                 , "Save"
                                                 , icon = icon("save")
                                                 , style = "material-flat"
-                                                , color = "primary"
+                                                , color = "danger"
                                                 , block = T
                                    )
                             )
@@ -492,7 +542,7 @@ server <- function(input, output) {
                                                   , "Dismiss"
                                                   , icon = icon("close")
                                                   , style = "material-flat"
-                                                  , color = "primary"
+                                                  , color = "danger"
                                                   , block = T)
                             )
                         )
@@ -594,7 +644,7 @@ server <- function(input, output) {
         rowData <- df[rowNumber, ]
         showModal(
             modalDialog(title = "Edit Grade", easyClose = T
-                        ,box(width = 12, status = "primary"
+                        ,box(width = 12, status = "danger"
                              , HTML("<b> Name: </b>")
                              , renderText(rowData$firstLast)
                              , HTML("<b> Homework ID: </b>")
@@ -608,7 +658,7 @@ server <- function(input, output) {
                                                 , icon = icon("save")
                                                 , style = "material-flat"
                                                 , block = T
-                                                , color = "primary"
+                                                , color = "danger"
                                    )
                             )
                             , column(width = 6
@@ -616,7 +666,7 @@ server <- function(input, output) {
                                                   , "Dismiss"
                                                   , icon = icon("close")
                                                   , style = "material-flat"
-                                                  , color = "primary"
+                                                  , color = "danger"
                                                   , block = T)
                             )
                         )
@@ -660,7 +710,7 @@ server <- function(input, output) {
         df_homeworks <- homework_grades()
         showModal(
             modalDialog(title = "Add a Homework",  easyClose = T
-                        , box(width = 12, status = "primary", title = "Homework Information"
+                        , box(width = 12, status = "danger", title = "Homework Information"
                               , fluidRow(
                                   column(width = 6
                                          , numericInput(inputId = "hwAddID", label = "Homework ID", value = 1 + max(df_homeworks$homework_id))
@@ -677,7 +727,7 @@ server <- function(input, output) {
                                                 , icon = icon("save")
                                                 , style = "material-flat"
                                                 , block = T
-                                                , color = "primary"
+                                                , color = "danger"
                                    )
                             )
                             , column(width = 6
@@ -685,7 +735,7 @@ server <- function(input, output) {
                                                   , "Dismiss"
                                                   , icon = icon("close")
                                                   , style = "material-flat"
-                                                  , color = "primary"
+                                                  , color = "danger"
                                                   , block = T)
                                      
                             )
