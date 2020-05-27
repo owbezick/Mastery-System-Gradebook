@@ -8,8 +8,9 @@ source("data_intake.R", local = TRUE)
 source("utils.R", local = TRUE)
 
 # Define UI
-ui <- dashboardPage(
-  dashboardHeader(title = "Student View"
+ui <- dashboardPage(skin = "black"
+  , dashboardHeader(title = "Student View"
+                    , tags$li(class = "dropdown", tags$img(height = "40px", src='davidson_logo_white.png', hspace = "4", vspace ="4"))
   )
   , dashboardSidebar(
     sidebarMenu(
@@ -18,7 +19,56 @@ ui <- dashboardPage(
     )
   )
   , dashboardBody( 
-    tabItems(
+    # Custom CSS Formating ----
+    tags$head(
+      tags$style(
+        HTML('
+                          .skin-black .main-header .logo {
+                            background-color: #d73925;
+                            color: #000;
+                            border-bottom: 0 solid transparent;
+                          }
+                          .skin-black .main-header .navbar {
+                            background-color:#1f2d33;
+                          }
+                          .skin-black .main-header .navbar>.sidebar-toggle {
+                          color: #eee;
+                          }
+                          .box.box-danger {
+                          border-top-color: #ac1a2f;
+                          }
+                          .small-box.bg-red{ 
+                          background-color: #ac1a2f !important; color: #eee !important; 
+                          }
+                          .skin-black .main-header>.logo {
+                          background-color: #ac1a2f;
+                          color: #ffffff;
+                          border-bottom: 0 solid transparent;
+                          border-right: 1px solid #eee;
+                          }
+                          .main-header .logo {
+                          display: block;
+                          float: left;
+                          height: 50px;
+                          font-size: 17px;
+                          line-height: 50px;
+                          text-align: center;
+                          width: 230px;
+                          font-family: "Rubik",Helvetica,Arial,Lucida,sans-serif;
+                          padding: 0 15px;
+                          font-weight: 300;
+                          overflow: hidden;
+                          }
+                          .h3 {
+                          font-family: "Rubik",Helvetica,Arial,Lucida,sans-serif;
+                          }
+                          .body {
+                          font-family: "Rubik",Helvetica,Arial,Lucida,sans-serif;
+                          }
+                            ')
+      )
+    )
+    , tabItems(
       tabItem(
         tabName = "home"
         , HTML("<center><h1> Mastery Gradebook Dashboard </h1></center>")
@@ -31,14 +81,14 @@ ui <- dashboardPage(
       )
       , tabItem(
         tabName = "viewGrades"
-        , tags$style(".small-box.bg-red { background-color: #516b91 !important; color: #000000 !important; }")
-        , tags$style(".small-box.bg-navy { background-color: #5298c6 !important; color: #000000 !important; }")
-        , tags$style(".small-box.bg-yellow { background-color: #5ac4e6 !important; color: #000000 !important; }")
-        , tags$style(".small-box.bg-green { background-color: #edafda !important; color: #000000 !important; }")
+        , tags$style(".small-box.bg-red { background-color: #da766e !important; color: #000000!important; }")
+        , tags$style(".small-box.bg-navy { background-color: #ac1a2f !important; color: #ffffff !important; }")
+        , tags$style(".small-box.bg-yellow { background-color: #84a4aa !important; color: #000000 !important; }")
+        , tags$style(".small-box.bg-green { background-color:	#e4a78f !important; color: #000000 !important; }")
         , fluidRow(
           tabBox(width = 12
                    , tabPanel(title = "Exam Grades"
-                              , box(width = 12, status = "primary"
+                              , box(width = 12, status = "danger"
                                     , fluidRow(
                                       column(width = 3
                                              , valueBoxOutput("topics", width = 12)
@@ -56,10 +106,10 @@ ui <- dashboardPage(
                               )
                               , fluidRow(
                                 column(width = 12
-                                       , box(width = 6, status = "primary", title = "All Exam Grades", height = "550"
+                                       , box(width = 6, status = "danger", title = "All Exam Grades", height = "550"
                                              , DTOutput("exam_grades_dt")
                                        )
-                                       , box(width = 6, status = "primary", title = "Top Grades",  height = "550"
+                                       , box(width = 6, status = "danger", title = "Top Grades",  height = "550"
                                              , echarts4rOutput("gradeBar")
                                        )
                                 )
@@ -68,15 +118,15 @@ ui <- dashboardPage(
                    , tabPanel(title = "Homework Grades"
                               , fluidRow(
                                 column(width = 6
-                                       , box(width = 12, status = "primary", height = "100%"
+                                       , box(width = 12, status = "danger", height = "100%"
                                              , valueBoxOutput("homework_average", width = 12)
                                        )
-                                       , box(width = 12, status = "primary", title = "All Homework Grades"
+                                       , box(width = 12, status = "danger", title = "All Homework Grades"
                                              , DTOutput("homework_grades_dt")
                                        )
                                 )
                                 , column(width = 6
-                                         , box(width = 12, status = "primary", title = "Plotted Homework Grades", height = "100%"
+                                         , box(width = 12, status = "danger", title = "Plotted Homework Grades", height = "100%"
                                                , echarts4rOutput("homeworkScatter")
                                          )
                                 )
@@ -147,7 +197,7 @@ server <- function(input, output) {
     req(is$auth) # requires authentication for viewing
     df <- student_def %>%
       filter(student_id == auth_student_id())
-    box(width= 6, title = "Student Information", status = "primary"
+    box(width= 6, title = "Student Information", status = "danger"
         , column(width = 6
                  , fluidRow(
                    img(src= paste0(as.character(df$student_id), ".jpg"))
@@ -178,7 +228,7 @@ server <- function(input, output) {
     df <- student_def %>%
       filter(student_id == auth_student_id())
     
-    box(width= 6, title = "Professor Information", status = "primary"
+    box(width= 6, title = "Professor Information", status = "danger"
         , column(width = 6
                  , fluidRow(
                    img(src= "mascot.jpg")
@@ -223,7 +273,7 @@ server <- function(input, output) {
   output$schedule <- renderUI({ 
     req(is$auth)
     fluidRow(column(width = 12
-                    , box(width = 12, title = "Assignment Schedule", status = "primary"
+                    , box(width = 12, title = "Assignment Schedule", status = "danger"
                           , HTML("Select an assignment for details")
                           , timevisOutput("gantt")
                     )
@@ -241,7 +291,7 @@ server <- function(input, output) {
       
       showModal(
         modalDialog(title = "Homework Details"
-                    , box(width = 12, status = "primary"
+                    , box(width = 12, status = "danger"
                           , column(width = 12
                                    , fluidRow(
                                      column(width = 12
@@ -270,7 +320,7 @@ server <- function(input, output) {
         filter(exam_id == assignment_id)
       showModal(
         modalDialog(title = "Exam Details", footer = NULL, easyClose = T
-                    , box(width = 12, status = "primary"
+                    , box(width = 12, status = "danger"
                           , column(width = 12
                                    , fluidRow(
                                      column(width = 12
@@ -335,7 +385,7 @@ server <- function(input, output) {
       e_bar("A", name = "Apprentice") %>%
       e_bar("J", name = "Journeyman")  %>%
       e_bar("M", name = "Master") %>%
-      e_theme("westeros") %>%
+      e_theme("dark") %>%
       e_tooltip() %>%
       e_legend(bottom = 0)
   })
@@ -396,7 +446,7 @@ server <- function(input, output) {
       e_chart(homework_id) %>%
       e_scatter(grade, symbol_size = 15) %>%
       e_tooltip() %>%
-      e_theme('westeros') %>%
+      e_theme('dark') %>%
       e_legend(show=F)
   })
   
