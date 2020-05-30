@@ -213,11 +213,11 @@ server <- function(input, output) {
     })
     # Schedule ----
     output$gantt <- renderTimevis({
-        exams <- exam_def %>%
+        exams <- reactive$exam_def %>%
             mutate(content = paste("Exam", exam_id)) %>%
             mutate(id = paste0("E", exam_id)) %>%
             select(content = content, start = date, id = id)
-        homeworks <- homework_def %>%
+        homeworks <- reactive$homework_def %>%
             mutate(content = paste("Homework", homework_id))%>%
             mutate(id = paste0("H", homework_id)) %>%
             select(content = content, start = date, id = id)
