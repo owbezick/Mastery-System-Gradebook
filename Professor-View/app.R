@@ -798,24 +798,11 @@ server <- function(input, output) {
     #When the "Save Grade" button is pressed
     observeEvent(input$hwgradeSave,{
         rowNumber <- input$editHomeworkGrades_rows_selected
-        df <- homework_grades()
-        rowData <- df[rowNumber, ]
-        newGrade <- as.character(input$hwGrade)
-        hw_ID <- rowData[1, 3]
-        
-        df <- student_def %>%
-            filter(firstLast == rowData$firstLast)
-        
-        student_id <- df$student_id
-        
-        # Write to Database
-        sql_query <- paste0("update Shiny.dbo.homework_grade set grade = '", newGrade, "' where (homework_id = ", hw_ID, " and student_id = ", student_id, ")")
-        dbExecute(con, sql_query)
-        
-        # Background App Refresh
-        sql_query <- 'Select * from Shiny.dbo.homework_grade'
-        df_homeworkGrades <- dbGetQuery(con, sql_query)
-        reactive$homework_grade <- df_homeworkGrades
+        df <- reactive$homework_grade
+        newGrade <-input$hwGrade
+        df[rowNumber, "grade"] = newGrade
+        reactive$homework_grade <- df
+        sheet_write(df, gradebook, "Homework Grades")
         
         showNotification("Changes Saved to Remote Database.", type = c("message"), duration = 3)
         removeModal()
