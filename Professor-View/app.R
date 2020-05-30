@@ -74,6 +74,10 @@ ui <- dashboardPage(skin = "black"
                           }
                           .nav-tabs-custom>.nav-tabs>li.active {
                             border-top-color: #ac1a2f;
+                          }
+                            .bttn-fill.bttn-danger {
+                            background: #ac1a2f;
+                            color: #fff;
                             }
                             ')
                             )
@@ -174,7 +178,14 @@ ui <- dashboardPage(skin = "black"
                             # Edit Exams ---- 
                             , tabItem(
                                 tabName = "editReviewGrades"
-                                , actionBttn(inputId = "addReview", label = "Add Exam", style = "fill", color = "danger", block = T)
+                                , fluidRow(
+                                    column(width = 6
+                                           , actionBttn(inputId = "addExam", label = "Add Exam", style = "fill", color = "danger", block = T)
+                                           )
+                                    , column(width = 6
+                                             , actionBttn(inputId = "editExam", label = "Edit Exam", style = "fill", color = "danger", block = T)
+                                             )
+                                )
                                 , fluidRow(
                                     box(width = 12, status = "danger", title = "Edit Exam Grades"
                                         , column(width = 12
@@ -186,7 +197,14 @@ ui <- dashboardPage(skin = "black"
                             # Edit Homeworks ----
                             , tabItem(
                                 tabName = "editHomeworkGrades"
-                                , actionBttn(inputId = "addHW", label = "Add Homework Assignment", style = "fill", color = "danger", block = T)
+                                , fluidRow(
+                                    column(width = 6
+                                           , actionBttn(inputId = "addHW", label = "Add Homework", style = "fill", color = "danger", block = T)
+                                    )
+                                    , column(width = 6
+                                             , actionBttn(inputId = "editHW", label = "Edit Homework", style = "fill", color = "danger", block = T)
+                                    )
+                                )
                                 , fluidRow(
                                     box(width = 12, status = "danger", title = "Edit Homework Grades"
                                         , DTOutput("editHomeworkGrades")
@@ -202,8 +220,7 @@ ui <- dashboardPage(skin = "black"
 # Define server logic 
 server <- function(input, output) {
     output$total_exams <- renderValueBox({
-        value <- reactive$exam_def %>%
-            nrow()
+        value <- max(reactive$exam_def$exam_id)
         valueBox(value, subtitle = "Exams", color= "red")
     })
     output$total_homeworks <- renderValueBox({
@@ -211,6 +228,7 @@ server <- function(input, output) {
             nrow()
         valueBox(value, subtitle = "Homeworks", color= "red")
     })
+    
     # Schedule ----
     output$gantt <- renderTimevis({
         exams <- reactive$exam_def %>%
@@ -524,7 +542,7 @@ server <- function(input, output) {
         )
     })
     
-    # Table-- builds table of students and homeworks to return to UI
+    # homwork data
     output$homeworkGradeTable <- renderDT({
         req(input$hwStudentPicker, input$hwPicker)
         df <- homework_grades()
@@ -536,8 +554,7 @@ server <- function(input, output) {
         datatable(df, rownames = FALSE)
     })
     
-    # Homework Average-- calculates homework averages for every student, pulling 
-    # from the data base
+    # HW AVG Data
     hwAvg <- reactive({
         req(input$hwStudentPicker, input$hwPicker)
         df <- homework_grades()
@@ -548,8 +565,7 @@ server <- function(input, output) {
             mutate(homeworkAvg = mean(grade)/100)
     })
     
-    # Graph -- pulls data from the database and visualizes
-    # homework grades, returned to UI
+    # AVG hw graph
     output$avgHomeworkGraph <- renderEcharts4r({
         df <- hwAvg()
         df %>%
@@ -649,7 +665,7 @@ server <- function(input, output) {
     
     
     # Add Exam
-    observeEvent(input$addReview, {
+    observeEvent(input$addExam, {
         showModal(
             modalDialog(title = "Add an Exam",  easyClose = T
                         , box(width = 12, status = "danger", title = "Exam Information"
