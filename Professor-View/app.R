@@ -292,7 +292,12 @@ server <- function(input, output) {
                     ,"Student"
                     , choices = ls_studentsR()
                     , selected = ls_studentsR()
-                    , multiple = TRUE)
+                    , multiple = TRUE
+                    , options = list(
+                        `actions-box` = TRUE,
+                        `deselect-all-text` = "Deselect All",
+                        `select-all-text` = "Select All")
+        )
     })
     
     # Exam Picker
@@ -301,7 +306,12 @@ server <- function(input, output) {
                     ,"Exam by ID"
                     , choices = ls_examsR()
                     , selected = ls_examsR()
-                    , multiple = TRUE)
+                    , multiple = TRUE
+                    , options = list(
+                        `actions-box` = TRUE,
+                        `deselect-all-text` = "Deselect All",
+                        `select-all-text` = "Select All")
+                    )
     })
     
     filtered_exam_data <- reactive({
@@ -375,7 +385,12 @@ server <- function(input, output) {
                     ,"Student"
                     , choices = ls_studentsHW()
                     , selected = ls_studentsHW()
-                    , multiple = TRUE)
+                    , multiple = TRUE
+                    , options = list(
+                        `actions-box` = TRUE,
+                        `deselect-all-text` = "Deselect All",
+                        `select-all-text` = "Select All")
+                    )
     })
     
     # Homework Picker
@@ -384,7 +399,12 @@ server <- function(input, output) {
                     ,"Homework by ID"
                     , choices = ls_homeworksHW()
                     , selected = ls_homeworksHW()
-                    , multiple = TRUE)
+                    , multiple = TRUE
+                    , options = list(
+                        `actions-box` = TRUE,
+                        `deselect-all-text` = "Deselect All",
+                        `select-all-text` = "Select All")
+                    )
     })
     
     # Table-- builds table of students and homeworks to return to UI
