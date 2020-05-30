@@ -636,7 +636,7 @@ server <- function(input, output) {
         removeModal()
     })
     
-    #When the "Save Grade" button is pressed
+    # When the "Save Grade" button is pressed
     observeEvent(input$gradeSave,{
         rowNumber <- input$edit_exam_dt_rows_selected
         df <- reactive$exam_grade
@@ -693,33 +693,24 @@ server <- function(input, output) {
         removeModal()
     })
     
-    # Saves the new assignment
+    # Saves the new assignment ----
     observeEvent(input$saveExam, {
-        con <- db_connect()
+
+        df <- reactive$exam_def
         row <- data_frame(exam_id = c(as.numeric(input$add_exam_id))
                           , first_topic = c(as.character(input$add_exam_first))
                           , last_topic = c(as.character(input$add_exam_last))
                           , date = c(as.character(input$add_exam_date)))
         
-        
-        query <- sqlAppendTable(con, "shiny.dbo.exam_def", quotes(row), row.names = FALSE)
-        
-        query_character <- as.character(query)
-        noDouble <- gsub('"',"",query)
-        noNew <- gsub('\n'," ",noDouble)
-        dbSendQuery(con, noNew)
-        
-        # Background App Refresh
-        sql_query <- 'Select * from Shiny.dbo.exam_def'
-        df_examdef <- dbGetQuery(con, sql_query)
-        reactive$exam_def <- df_examdef
-        
-        
+        final <- rbind(df, row)
+        reactive$exam_def <- final
+        sheet_write(final, gradebook, "Exams")
+    
         first_topic <- as.numeric(input$add_exam_first)
         last_topic <- as.numeric(input$add_exam_last)
         times <- last_topic - first_topic + 1
-        # Add in new grades as NA
-        ls_student_id <- reactive$homework_grade %>%
+       
+        ls_student_id <- reactive$exam_grade %>%
             select(student_id) %>%
             distinct() %>%
             pull()
@@ -729,6 +720,7 @@ server <- function(input, output) {
         exam_id <- c()
         grade <- c()
         topic_id <- c()
+        
         for(i in 1:length(ls_student_id)){
             student_id = append(student_id, c(rep(ls_student_id[i], times)))
             exam_id = append(exam_id, c(rep(as.numeric(input$add_exam_id), times)))
@@ -742,28 +734,14 @@ server <- function(input, output) {
             , grade = grade
             , topic_id = topic_id
         )
+        df <- reactive$exam_grade
+        final <- rbind(df, new_grade_df)
+        final <- final[order(final$student_id),]
         
-        for(i in 1:nrow(new_grade_df)){
-            row <- quotes(new_grade_df[i,])
-            query <- sqlAppendTable(con, "Shiny.dbo.exam_grade", row, row.names = FALSE)
-            query_character <- as.character(query)
-            noDouble <- gsub('"',"",query)
-            noNew <- gsub('\n'," ",noDouble)
-            dbSendQuery(con, noNew)
-        }
-        
-        sql_query <- 'Select * from Shiny.dbo.exam_grade'
-        df_homework_grade <- dbGetQuery(con, sql_query)
-        reactive$homework_grade <- df_homework_grade
-        
-        showNotification(paste0("Exam added as id: ", as.character(input$add_exam_id), " with grade NA"))
-        # Background App Refresh
-        sql_query <- 'Select * from Shiny.dbo.exam_grade'
-        df_examgrade <- dbGetQuery(con, sql_query)
-        reactive$exam_grade <- df_examgrade
-        
+        reactive$exam_grade <- final
+        sheet_write(final, gradebook, "Exam Grades")
+        showNotification("Changes Saved to Remote Database.", type = c("message"), duration = 3)
         removeModal()
-        
     })
     
     # Edit Homework Server ----
