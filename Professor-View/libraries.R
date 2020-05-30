@@ -11,6 +11,7 @@ library(lubridate)
 library(openxlsx)
 library(tidyverse)
 library(readxl)
+library(googlesheets4)
 
 # Viz
 library(echarts4r)

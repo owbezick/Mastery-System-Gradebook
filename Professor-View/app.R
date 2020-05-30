@@ -3,7 +3,7 @@
 
 # Source Libraries
 source("libraries.R", local = TRUE)
-source("data_intake.R", local = TRUE)
+source("sheets_data_intake.R", local = TRUE)
 source("utils.R", local = TRUE)
 
 # Define UI
@@ -639,25 +639,11 @@ server <- function(input, output) {
     #When the "Save Grade" button is pressed
     observeEvent(input$gradeSave,{
         rowNumber <- input$edit_exam_dt_rows_selected
-        df <- exam_grades()
-        rowData <- df[rowNumber, ]
-        topic_id <- rowData$topic_id
-        newGrade <- as.character(input$grade)
-        exam_id <- rowData[1, 3]
+        df <- reactive$exam_grade
+        df[rowNumber, "grade"] = input$grade
         
-        df <- student_def %>%
-            filter(firstLast == rowData$firstLast)
-        
-        student_id <- df$student_id
-        
-        # Write to Database
-        sql_query <- paste0("update Shiny.dbo.exam_grade set grade = '", newGrade, "' where (topic_id = ", topic_id, " and student_id = ", student_id, " and exam_id = ", exam_id, ")")
-        dbExecute(con, sql_query)
-        
-        # Background App Refresh
-        sql_query <- 'Select * from Shiny.dbo.exam_grade'
-        df_examGrades <- dbGetQuery(con, sql_query)
-        reactive$exam_grade <- df_examGrades
+        reactive$exam_grade <- df
+        sheet_write(df, gradebook, "Exam Grades")
         
         showNotification("Changes Saved to Remote Database.", type = c("message"), duration = 3)
         removeModal()

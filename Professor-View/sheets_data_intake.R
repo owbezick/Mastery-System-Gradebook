@@ -1,21 +1,19 @@
-library(googlesheets4)
+#gs_auth(new_user = TRUE)
 
-gs_auth(new_user = TRUE)
-
-gradebook <- gs4_create("Mastery Grading System Professor View")
+#gradebook <- gs4_create("Mastery Grading System Professor View")
 
 # Init Data read in ----
-student_def <- read_excel("proposed_database.xlsx", sheet = "student_def")
-exam_def <- read_excel("proposed_database.xlsx", sheet = "exam_def")
-exam_grade <- read_excel("proposed_database.xlsx", sheet = "exam_grade")
-homework_def <- read_excel("proposed_database.xlsx", sheet = "homework_def")
-homework_grade <- read_excel("proposed_database.xlsx", sheet = "homework_grade")
-
-sheet_write(student_def, gradebook, "Students")
-sheet_write(exam_def, gradebook, "Exams")
-sheet_write(exam_grade, gradebook, "Exam Grades")
-sheet_write(homework_def, gradebook, "Homeworks")
-sheet_write(homework_grade, gradebook, "Homework Grades")
+# student_def <- read_excel("proposed_database.xlsx", sheet = "student_def")
+# exam_def <- read_excel("proposed_database.xlsx", sheet = "exam_def")
+# exam_grade <- read_excel("proposed_database.xlsx", sheet = "exam_grade")
+# homework_def <- read_excel("proposed_database.xlsx", sheet = "homework_def")
+# homework_grade <- read_excel("proposed_database.xlsx", sheet = "homework_grade")
+# 
+# sheet_write(student_def, gradebook, "Students")
+# sheet_write(exam_def, gradebook, "Exams")
+# sheet_write(exam_grade, gradebook, "Exam Grades")
+# sheet_write(homework_def, gradebook, "Homeworks")
+# sheet_write(homework_grade, gradebook, "Homework Grades")
 
 student_def <- read_sheet(gradebook, "Students")
 exam_def<- read_sheet(gradebook, "Exams")
