@@ -76,6 +76,7 @@ ui <- dashboardPage(skin = "black"
                 )
             )
         , tabItems(
+            # Home Tab ----
             tabItem(
                 tabName = "home"
                 , HTML("<center><h1> Mastery Gradebook Dashboard </h1></center>")
@@ -94,16 +95,19 @@ ui <- dashboardPage(skin = "black"
                          )
                 )
             )
-            
+            # View Exams ----
             , tabItem(
                 tabName = "examGrades"
                 ,fluidRow(
                     box(width = 12, title = "Filter:", status = "danger" 
-                        ,column(width = 6
+                        ,column(width = 4
                                 ,uiOutput("examStudentPicker")
                         )
-                        , column(width = 6
+                        , column(width = 4
                                  ,uiOutput("examPicker")
+                        )
+                        , column(width = 4
+                                 ,uiOutput("topicPicker")
                         )
                     )
                 )
@@ -115,6 +119,7 @@ ui <- dashboardPage(skin = "black"
                           , echarts4rOutput("gradeBar"))
                 )
             )
+            # View Homeworks ----
             , tabItem(
                 tabName = "homeworkGrades"
                 , fluidRow(
@@ -136,6 +141,7 @@ ui <- dashboardPage(skin = "black"
                     )
                 )
             )
+            # Edit Exams ---- 
             , tabItem(
                 tabName = "editReviewGrades"
                 , actionBttn(inputId = "addReview", label = "Add Exam", style = "fill", color = "danger", block = T)
@@ -147,6 +153,7 @@ ui <- dashboardPage(skin = "black"
                     )
                 )
             )
+            # Edit Homeworks ----
             , tabItem(
                 tabName = "editHomeworkGrades"
                 , actionBttn(inputId = "addHW", label = "Add Homework Assignment", style = "fill", color = "danger", block = T)
@@ -271,7 +278,7 @@ server <- function(input, output) {
         }
     })
     
-    # View Review Server ---- 
+    # View Exam Server ---- 
     # List of students by ID
     ls_studentsR <- reactive({
         df <- exam_grades()
@@ -284,6 +291,13 @@ server <- function(input, output) {
         df <- exam_grades()
         df %>% distinct(exam_id) %>% 
             pull()
+    })
+    # List of topic numbers
+    ls_topicsR <- reactive({
+        df <- exam_grades()
+        ls_topics <- df %>% distinct(topic_id) %>% 
+            pull()
+        ls_topics <- sort(ls_topics, decreasing = F)
     })
     
     # Student Picker
@@ -314,12 +328,27 @@ server <- function(input, output) {
                     )
     })
     
+    # Topic Picker
+    output$topicPicker <- renderUI({
+        pickerInput("topicPicker"
+                    ,"Topic by ID"
+                    , choices = ls_topicsR()
+                    , selected = ls_topicsR()
+                    , multiple = TRUE
+                    , options = list(
+                        `actions-box` = TRUE,
+                        `deselect-all-text` = "Deselect All",
+                        `select-all-text` = "Select All")
+        )
+    })
+    
     filtered_exam_data <- reactive({
-        req(input$examStudentPicker, input$examPicker)
+        req(input$examStudentPicker, input$examPicker, input$topicPicker)
         df <- exam_grades()
         df <- df %>%
-            filter(exam_id %in% input$examPicker, firstLast %in% input$examStudentPicker)
+            filter(exam_id %in% input$examPicker, firstLast %in% input$examStudentPicker, topic_id %in% input$topicPicker)
     })
+    
     # DT Exam Grade Output
     output$totalExamGrades <- renderDT({
         df <- filtered_exam_data() %>%
