@@ -8,28 +8,28 @@ source("utils.R", local = TRUE)
 
 # Define UI
 ui <- dashboardPage(skin = "black"
-    , dashboardHeader(title = "Professor View" 
-                      , tags$li(class = "dropdown", tags$img(height = "40px", src='davidson_logo_white.png', hspace = "4", vspace ="4")
-    ))
-    # Sidebar ----
-    , dashboardSidebar( 
-        sidebarMenu(
-            menuItem(tabName = "home", text = "Home", icon = icon("home"))
-            , menuItem(tabName ="viewGrades", text = "View Grades", icon = icon("chalkboard")
-                       , menuSubItem(tabName = "examGrades", text = "View Exam Grades")
-                       , menuSubItem(tabName = "homeworkGrades", text = "View Homework Grades")
-            )
-            , menuItem(tabName ="editGrades", text = "Edit Grades", icon = icon("chalkboard-teacher")
-                       , menuSubItem(tabName = "editReviewGrades", text = "Edit Exam Grades")
-                       , menuSubItem(tabName = "editHomeworkGrades", text = "Edit Homework Grades")
-            )
-        )
-    )
-    , dashboardBody(
-        # Custom CSS Formating ----
-        tags$head(
-            tags$style(
-                HTML('
+                    , dashboardHeader(title = "Professor View" 
+                                      , tags$li(class = "dropdown", tags$img(height = "40px", src='davidson_logo_white.png', hspace = "4", vspace ="4")
+                                      ))
+                    # Sidebar ----
+                    , dashboardSidebar( 
+                        sidebarMenu(
+                            menuItem(tabName = "home", text = "Home", icon = icon("home"))
+                            , menuItem(tabName ="viewGrades", text = "View Grades", icon = icon("chalkboard")
+                                       , menuSubItem(tabName = "examGrades", text = "View Exam Grades")
+                                       , menuSubItem(tabName = "homeworkGrades", text = "View Homework Grades")
+                            )
+                            , menuItem(tabName ="editGrades", text = "Edit Grades", icon = icon("chalkboard-teacher")
+                                       , menuSubItem(tabName = "editReviewGrades", text = "Edit Exam Grades")
+                                       , menuSubItem(tabName = "editHomeworkGrades", text = "Edit Homework Grades")
+                            )
+                        )
+                    )
+                    , dashboardBody(
+                        # Custom CSS Formating ----
+                        tags$head(
+                            tags$style(
+                                HTML('
                           .skin-red .main-header .logo {
                             background-color: #d73925;
                             color: #000;
@@ -72,100 +72,130 @@ ui <- dashboardPage(skin = "black"
                           .body {
                           font-family: "Rubik",Helvetica,Arial,Lucida,sans-serif;
                           }
+                          .nav-tabs-custom>.nav-tabs>li.active {
+                            border-top-color: #ac1a2f;
+                            }
                             ')
-                )
-            )
-        , tabItems(
-            # Home Tab ----
-            tabItem(
-                tabName = "home"
-                , HTML("<center><h1> Mastery Gradebook Dashboard </h1></center>")
-                , column(width = 3
-                         ,box(width = 12, status = "danger"
-                              , tags$head(tags$style(HTML(".small-box {height: 85px}")))
-                              , valueBoxOutput("total_exams", width = 12)
-                              , valueBoxOutput("total_homeworks", width = 12)
-                         )
-                )
-                , column(width = 9
-                         , fluidRow(box(width = 12, status = "danger", title = "Assignment Schedule"
-                                        , HTML("Select an assignment for details")
-                                        , timevisOutput("gantt")
-                         )
-                         )
-                )
-            )
-            # View Exams ----
-            , tabItem(
-                tabName = "examGrades"
-                ,fluidRow(
-                    box(width = 12, title = "Filter:", status = "danger" 
-                        ,column(width = 4
-                                ,uiOutput("examStudentPicker")
+                            )
                         )
-                        , column(width = 4
-                                 ,uiOutput("examPicker")
+                        , tabItems(
+                            # Home Tab ----
+                            tabItem(
+                                tabName = "home"
+                                , HTML("<center><h1> Mastery Gradebook Dashboard </h1></center>")
+                                , column(width = 3
+                                         ,box(width = 12, status = "danger"
+                                              , tags$head(tags$style(HTML(".small-box {height: 85px}")))
+                                              , valueBoxOutput("total_exams", width = 12)
+                                              , valueBoxOutput("total_homeworks", width = 12)
+                                         )
+                                )
+                                , column(width = 9
+                                         , fluidRow(box(width = 12, status = "danger", title = "Assignment Schedule"
+                                                        , HTML("Select an assignment for details")
+                                                        , timevisOutput("gantt")
+                                         )
+                                         )
+                                )
+                            )
+                            # View Exams ----
+                            , tabItem(
+                                tabName = "examGrades"
+                                ,fluidRow(
+                                    box(width = 12, title = "Filter:", status = "danger" 
+                                        ,column(width = 4
+                                                ,uiOutput("examStudentPicker")
+                                        )
+                                        , column(width = 4
+                                                 ,uiOutput("examPicker")
+                                        )
+                                        , column(width = 4
+                                                 ,uiOutput("topicPicker")
+                                        )
+                                    )
+                                )
+                                , fluidRow(
+                                    tabBox(title = "Exam Data", width = 12
+                                           , tabPanel(title = "All Grades", width = 12
+                                               , fluidRow(
+                                                   box(width = 6, status = "danger", title = "All Topic Grades"
+                                                            , DTOutput("totalExamGrades")
+                                               )
+                                               , box(width = 6, stauts = "danger", title = "Top Grades", status = "danger"
+                                                     , echarts4rOutput("gradeBar")
+                                               )
+                                               )
+                                           )
+                                           , tabPanel(title = "By Question", width = 12
+                                                      , fluidRow(
+                                                          box(width = 6, status = "danger", title = "Topic Masteries"
+                                                              , DTOutput("byQuestionDT")
+                                                          )
+                                                          , box(width = 6, stauts = "danger", title = "Topic Masteries", status = "danger"
+                                                                , echarts4rOutput("questionBar")
+                                                          )
+                                                      )
+                                                      )
+                                           , tabPanel(title = "By Student", width = 12
+                                                      , fluidRow(
+                                                          box(width = 6, status = "danger", title = "Student Masteries"
+                                                              , DTOutput("byStudentDT")
+                                                          )
+                                                          , box(width = 6, stauts = "danger", title = "Student Masteries", status = "danger"
+                                                                , echarts4rOutput("studentBar")
+                                                          )
+                                                      )
+                                                      )
+                                    )
+                                )
+                            )
+                            # View Homeworks ----
+                            , tabItem(
+                                tabName = "homeworkGrades"
+                                , fluidRow(
+                                    box(width = 12, title = "Filter:", status = "danger" 
+                                        ,column(width = 6
+                                                , uiOutput("hwStudentPicker")
+                                        )
+                                        , column(width = 6
+                                                 ,uiOutput("hwPicker")
+                                        )
+                                    )
+                                )
+                                , fluidRow(
+                                    box(width = 6, status = "danger",  title = "Homework Grades", height = "550"
+                                        , DTOutput("homeworkGradeTable")
+                                    )
+                                    , box(width = 6, status = "danger", title = "Homework Averages", height = "550"
+                                          , echarts4rOutput("avgHomeworkGraph")
+                                    )
+                                )
+                            )
+                            # Edit Exams ---- 
+                            , tabItem(
+                                tabName = "editReviewGrades"
+                                , actionBttn(inputId = "addReview", label = "Add Exam", style = "fill", color = "danger", block = T)
+                                , fluidRow(
+                                    box(width = 12, status = "danger", title = "Edit Exam Grades"
+                                        , column(width = 12
+                                                 , DTOutput("edit_exam_dt")
+                                        )
+                                    )
+                                )
+                            )
+                            # Edit Homeworks ----
+                            , tabItem(
+                                tabName = "editHomeworkGrades"
+                                , actionBttn(inputId = "addHW", label = "Add Homework Assignment", style = "fill", color = "danger", block = T)
+                                , fluidRow(
+                                    box(width = 12, status = "danger", title = "Edit Homework Grades"
+                                        , DTOutput("editHomeworkGrades")
+                                    )
+                                )
+                            )
+                            
                         )
-                        , column(width = 4
-                                 ,uiOutput("topicPicker")
-                        )
                     )
-                )
-                , fluidRow(
-                    box(width = 6, status = "danger", title = "All Topic Grades", height = "550"
-                        , DTOutput("totalExamGrades")
-                    )
-                    , box(width = 6, stauts = "danger", title = "Top Grades", status = "danger", height = "550"
-                          , echarts4rOutput("gradeBar"))
-                )
-            )
-            # View Homeworks ----
-            , tabItem(
-                tabName = "homeworkGrades"
-                , fluidRow(
-                    box(width = 12, title = "Filter:", status = "danger" 
-                        ,column(width = 6
-                                , uiOutput("hwStudentPicker")
-                        )
-                        , column(width = 6
-                                 ,uiOutput("hwPicker")
-                        )
-                    )
-                )
-                , fluidRow(
-                    box(width = 6, status = "danger",  title = "Homework Grades", height = "550"
-                        , DTOutput("homeworkGradeTable")
-                    )
-                    , box(width = 6, status = "danger", title = "Homework Averages", height = "550"
-                          , echarts4rOutput("avgHomeworkGraph")
-                    )
-                )
-            )
-            # Edit Exams ---- 
-            , tabItem(
-                tabName = "editReviewGrades"
-                , actionBttn(inputId = "addReview", label = "Add Exam", style = "fill", color = "danger", block = T)
-                , fluidRow(
-                    box(width = 12, status = "danger", title = "Edit Exam Grades"
-                        , column(width = 12
-                                 , DTOutput("edit_exam_dt")
-                        )
-                    )
-                )
-            )
-            # Edit Homeworks ----
-            , tabItem(
-                tabName = "editHomeworkGrades"
-                , actionBttn(inputId = "addHW", label = "Add Homework Assignment", style = "fill", color = "danger", block = T)
-                , fluidRow(
-                    box(width = 12, status = "danger", title = "Edit Homework Grades"
-                        , DTOutput("editHomeworkGrades")
-                    )
-                )
-            )
-            
-        )
-    )
 )
 
 
@@ -325,7 +355,7 @@ server <- function(input, output) {
                         `actions-box` = TRUE,
                         `deselect-all-text` = "Deselect All",
                         `select-all-text` = "Select All")
-                    )
+        )
     })
     
     # Topic Picker
@@ -349,7 +379,8 @@ server <- function(input, output) {
             filter(exam_id %in% input$examPicker, firstLast %in% input$examStudentPicker, topic_id %in% input$topicPicker)
     })
     
-    # DT Exam Grade Output
+    # Total Grades ----
+    # DT Exam Grade Output 
     output$totalExamGrades <- renderDT({
         df <- filtered_exam_data() %>%
             select( Name = firstLast, `Exam ID` = exam_id, Topic = topic_id, Grade = grade)
@@ -394,6 +425,63 @@ server <- function(input, output) {
             e_legend(bottom = 0)
     })
     
+    # By Question ----
+    output$byQuestionDT <- renderDT({
+        df <- filtered_exam_data() 
+        df <- df %>%
+            group_by(topic_id) %>%
+            count(grade) %>%
+            ungroup() %>%
+            filter(grade =="M") %>%
+            select(`Topic ID` = topic_id, `Mastery Count` = n)
+        datatable(df, rownames = FALSE)
+    })
+    # Total Grades Chart-- visualizes review data from the class
+    output$questionBar <- renderEcharts4r({
+        df <- filtered_exam_data() 
+        df <- df %>%
+            group_by(topic_id) %>%
+            count(grade) %>%
+            ungroup() %>%
+            filter(grade =="M")
+        
+        df %>%
+            e_chart(topic_id) %>%
+            e_bar("n", name = "Total Mastered") %>%
+            e_tooltip() %>%
+            e_legend(show = F) %>%
+            e_theme("dark")
+    })
+    # By Student ----
+    output$byStudentDT <- renderDT({
+
+        df <- filtered_exam_data() 
+        df <- df %>%
+            group_by(firstLast, topic_id) %>%
+            summarise(grade = grade_max(grade)) %>%
+            count(grade) %>%
+            ungroup() %>%
+            filter(grade =="M") %>%
+            select(Name = firstLast, `Total Mastered` = n)
+        datatable(df, rownames = FALSE)
+    })
+    # Total Grades Chart-- visualizes review data from the class
+    output$studentBar <- renderEcharts4r({
+        df <- filtered_exam_data() 
+        df <- df %>%
+            group_by(firstLast, topic_id) %>%
+            summarise(grade = grade_max(grade)) %>%
+            count(grade) %>%
+            ungroup() %>%
+            filter(grade =="M") 
+        
+        df %>%
+            e_chart(firstLast) %>%
+            e_bar("n", name = "Total Mastered") %>%
+            e_tooltip() %>%
+            e_legend(show = F) %>%
+            e_theme("dark")
+    })
     
     # View Homeworks Server -----
     # List of students by firstLast
@@ -419,7 +507,7 @@ server <- function(input, output) {
                         `actions-box` = TRUE,
                         `deselect-all-text` = "Deselect All",
                         `select-all-text` = "Select All")
-                    )
+        )
     })
     
     # Homework Picker
@@ -433,7 +521,7 @@ server <- function(input, output) {
                         `actions-box` = TRUE,
                         `deselect-all-text` = "Deselect All",
                         `select-all-text` = "Select All")
-                    )
+        )
     })
     
     # Table-- builds table of students and homeworks to return to UI
